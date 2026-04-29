@@ -1,0 +1,277 @@
+view, text, input { color: #000; font-weight: normal; box-sizing: border-box; }
+
+/* Labels */
+.row-label-inline, .life-col-title, .row-label { color: #000 !important; font-weight: 500 !important; }
+.row-label-inline { font-size: 22rpx; width: 70rpx; flex-shrink: 0; }
+.row-label { font-size: 24rpx; display: block; margin-bottom: 10rpx; }
+/* Same style for paternal lineage label */
+.lineage-prefix-inline { color: #000 !important; font-weight: 500 !important; font-size: 24rpx; }
+
+/* Placeholders */
+.val-placeholder { color: #999 !important; font-family: "STKaiti", "KaiTi", "AR PL UKai CN", serif !important; }
+.rel-year-txt { color: #888 !important; font-family: Consolas, monospace !important; font-size: 18rpx !important; flex-shrink: 0; }
+
+/* Inline Inputs (Alias, Rank, Hometown) */
+.profile-row-inline { display: flex; align-items: center; padding: 15rpx 0; border-bottom: 1rpx solid #f8f8f8; gap: 10rpx; }
+.val-text-inline { flex: 1; font-size: 26rpx; font-family: "SimSun", serif; height: 50rpx; padding: 0 10rpx; border-radius: 6rpx; border: 1rpx solid transparent; }
+.rank-section { display: flex; align-items: center; width: 150rpx; border-left: 1rpx solid #eee; padding-left: 15rpx; margin-left: 10rpx; }
+.rank-input { width: 60rpx; text-align: center; }
+
+/* Collapsible sections */
+.name-section-expanded {
+  padding: 0 30rpx 20rpx;
+  border-bottom: 1rpx solid #e8e8e8;
+}
+.name-xingming-row { gap: 6rpx; }
+.name-xingming-row .surname-input {
+  width: 80rpx;
+  min-width: 80rpx;
+  text-align: center;
+  flex-shrink: 0;
+}
+.name-xingming-row .val-text-inline:not(.surname-input) {
+  flex: 1;
+  min-width: 0;
+}
+/* 全名: gray when auto-computed */
+.is-auto { color: #999 !important; font-style: italic; background: #fcfcfc; }
+
+/* Life section: click label to reveal details */
+.life-col-header {
+  display: flex;
+  align-items: center;
+  gap: 6rpx;
+  cursor: pointer;
+}
+.life-col-title.clickable { color: #000 !important; font-weight: 500 !important; }
+.life-expand-hint { font-size: 18rpx; color: #aaa; }
+.life-year-row {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  cursor: pointer;
+}
+.life-year-row .life-val {
+  width: auto;
+  min-width: 80rpx;
+}
+.life-val-text {
+  font-size: 24rpx;
+  font-family: "SimSun", serif;
+  height: 40rpx;
+  line-height: 40rpx;
+  color: #333;
+  border: 1rpx solid transparent;
+  border-radius: 4rpx;
+  padding: 0 8rpx;
+  white-space: nowrap;
+}
+.life-val-text.is-changed {
+  background-color: #fff8e1;
+  border-color: #ffb300;
+}
+
+/* Highlight modified fields */
+.is-changed {
+  background-color: #fff8e1 !important;
+  border-color: #ffb300 !important;
+}
+
+/* Chinese era display */
+.life-era {
+  font-size: 22rpx;
+  color: #888;
+  font-family: "STKaiti", "KaiTi", serif;
+  white-space: nowrap;
+}
+
+/* Header Name Editing */
+.name-edit-container { display: flex; flex-direction: column; gap: 12rpx; width: 440rpx; }
+.name-input-row { display: flex; flex-direction: row; align-items: center; gap: 10rpx; width: 100%; }
+.name-row { display: flex; align-items: center; gap: 10rpx; flex: 1; }
+.header-icons { display: flex; gap: 8rpx; flex-shrink: 0; }
+.icon-btn { font-size: 34rpx; opacity: 0.7; padding: 4rpx; }
+.name-input-box { border: 1rpx solid #eee; padding: 0 15rpx; height: 64rpx; font-size: 28rpx; border-radius: 8rpx; background: #fafafa; }
+
+/* Surname input: one char by default, auto-expands when more chars entered */
+.surname-input { 
+  width: 70rpx; 
+  min-width: 70rpx;
+  max-width: 200rpx;
+  flex-shrink: 0; 
+  text-align: center; 
+}
+
+/* Firstname input: takes remaining space */
+.firstname-input { 
+  flex: 1; 
+  min-width: 200rpx;
+}
+.name-input-box.full-name { font-size: 24rpx; height: 50rpx; color: #666; }
+.name-input-box.is-auto { color: #999 !important; font-style: italic; background: #fdfdfd; }
+
+/* Life Grid */
+.life-grid { display: flex; justify-content: space-between; gap: 15rpx; background: #fafafa; padding: 15rpx; border-radius: 10rpx; margin-bottom: 20rpx; }
+.life-col { flex: 1; }
+.life-col-title { font-size: 20rpx; border-bottom: 1rpx solid #eee; margin-bottom: 10rpx; text-align: left; display: block; padding-left: 8rpx; }
+.life-val { font-size: 24rpx; font-family: "SimSun", serif; height: 40rpx; margin-bottom: 6rpx; border: 1rpx solid transparent; border-radius: 4rpx; padding: 0 8rpx; width: 100%; }
+
+/* Highlights */
+.is-unsaved-text { color: #0277bd !important; }
+.is-unsaved-box { border: 3rpx solid #0277bd !important; }
+.is-active { border: 2rpx solid #0277bd !important; background: #fff !important; }
+
+/* Drawer & Layout */
+.drawer-mask { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1000; visibility: hidden; opacity: 0; transition: 0.3s; }
+.drawer-mask.show { visibility: visible; opacity: 1; }
+.drawer { position: fixed; bottom: 0; left: 0; right: 0; height: 95vh; background: #fff; border-radius: 40rpx 40rpx 0 0; z-index: 1001; transition: transform 0.1s ease-out; padding: 0 40rpx 40rpx; box-shadow: 0 -10rpx 40rpx rgba(0,0,0,0.1); display: flex; flex-direction: column; }
+.drag-handle { width: 100%; height: 50rpx; display: flex; justify-content: center; align-items: center; flex-shrink: 0; }
+.handle-bar { width: 80rpx; height: 8rpx; background: #ddd; border-radius: 4rpx; }
+.drawer-scroll { flex: 1; height: 0; }
+
+/* Header Info */
+.name-gender-row { display: flex; align-items: center; justify-content: space-between; padding: 10rpx 0 20rpx; border-bottom: 2rpx solid #f8f8f8; }
+.name-large { font-size: 58rpx; line-height: 1.2; font-family: "SimSun", serif; min-height: 70rpx; }
+.gender-display-text { font-size: 24rpx; padding: 6rpx 25rpx; border-radius: 40rpx; border: 1rpx solid #eee; }
+.gender-display-text.male { background: #bbdefb; color: #0d47a1 !important; }
+.gender-display-text.female { background: #fce4ec; color: #880e4f !important; }
+.gender-btn { font-size: 24rpx; padding: 10rpx 20rpx; border-radius: 30rpx; border: 1rpx solid #eee; margin-right: 10rpx; }
+.gender-btn.active.male { background: #0d47a1; color: #fff !important; }
+.gender-btn.active.female { background: #880e4f; color: #fff !important; }
+.gender-btn radio { display: none; }
+
+/* Relationships Grid */
+.rel-view-grid { display: flex; flex-direction: row; gap: 20rpx; margin-top: 15rpx; padding-bottom: 150rpx; }
+.rel-view-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.rel-card { margin-bottom: 8rpx; padding: 0 15rpx; border-radius: 8rpx; display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; border: 1rpx solid rgba(0,0,0,0.05); height: 64rpx; width: 100%; }
+.rel-card.male { background: #bbdefb; border-color: #90caf9; }
+.rel-card.female { background: #fce4ec; border-color: #f8bbd0; }
+.rel-card.pending-highlight { border: 2rpx solid #f57c00 !important; box-shadow: 0 0 0 2rpx rgba(245,124,0,0.25); }
+
+.name-scroll-container { flex: 1; overflow: hidden; white-space: nowrap; display: flex; align-items: center; margin-right: 10rpx; }
+.rel-name-txt { font-family: "SimSun", serif; font-size: 26rpx; color: #000; }
+.item-right { display: flex; align-items: center; gap: 8rpx; flex-shrink: 0; background: inherit; height: 100%; padding-left: 10rpx; }
+
+/* Marquee Animation */
+.scrolling-text { animation: marquee 10s linear infinite; animation-play-state: paused; }
+.rel-card:active .scrolling-text { animation-play-state: running; }
+@keyframes marquee { 0% { transform: translateX(0); } 20% { transform: translateX(0); } 100% { transform: translateX(-100%); } }
+
+/* Footer */
+.reorder-handle { font-size: 28rpx; color: #555; padding-left: 10rpx; opacity: 0.4; }
+.jump-btn { font-size: 18rpx; color: #0277bd; padding: 4rpx 12rpx; background: #e3f2fd; border-radius: 4rpx; margin-left: 8rpx; flex-shrink: 0; }
+.add-btn-tiny {
+  width: 100%;
+  font-size: 18rpx;
+  background: #fff;
+  border: 1rpx dashed #ccc;
+  color: #999;
+  height: 48rpx;
+  line-height: 48rpx;
+  margin-top: 5rpx;
+  padding: 0 !important;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+.picker-box.invitation { color: #999; font-family: "STKaiti", serif; border: 1rpx dashed #ccc; background: #fcfcfc; border-radius: 8rpx; text-align: center; font-size: 24rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; }
+.picker-box.disabled { color: #ccc; font-family: "STKaiti", serif; border: 1rpx dashed #eee; background: #f9f9f9; border-radius: 8rpx; text-align: center; font-size: 22rpx; height: 64rpx; display: flex; align-items: center; justify-content: center; }
+.picker-disabled-text { color: #ccc; }
+.save-btn-main { height: 80rpx; line-height: 1; font-size: 28rpx; border-radius: 8rpx; width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; padding: 0; }
+.save-btn-main.active { background: #0277bd; color: #fff; }
+.save-btn-main.disabled { background: #f5f5f5; color: #ccc; border: 1rpx solid #eee; }
+.del-btn-archive { color: #c62828; text-align: center; font-size: 22rpx; margin-top: 50rpx; text-decoration: underline; }
+.action-footer { padding-bottom: 120rpx; }
+
+/* Paternal Lineage Section (independent full-width section) */
+/* Paternal Lineage Section */
+.paternal-lineage-section {
+  margin-top: 20rpx;
+  margin-bottom: 20rpx;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 20rpx;
+}
+
+/* Row layout for each ancestor level */
+.lineage-bar-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 12rpx;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Level-specific indentation via padding on the prefix wrapper
+   The row itself stays 100% wide. Indentation is achieved by expanding the prefix area.
+   The content box width is constant across all levels so they are identical in length. */
+.lineage-bar-row.level-3 .lineage-prefix-outside {
+  width: 40rpx;
+  margin-right: 8rpx;
+}
+.lineage-bar-row.level-2 .lineage-prefix-outside {
+  width: calc(40rpx + 40rpx);
+  margin-right: 8rpx;
+}
+.lineage-bar-row.level-1 .lineage-prefix-outside {
+  width: calc(40rpx + 80rpx);
+  margin-right: 8rpx;
+}
+
+/* All three levels: content box is 50% of screen width (half screen), identical length. */
+.lineage-bar-row.level-3 .lineage-bar-content,
+.lineage-bar-row.level-2 .lineage-bar-content,
+.lineage-bar-row.level-1 .lineage-bar-content {
+  width: 50%;
+}
+
+/* Label outside the box (left side) */
+.lineage-prefix-outside {
+  min-width: 40rpx;
+  flex-shrink: 0;
+  font-size: 22rpx;
+  color: #666;
+  font-weight: 500;
+  white-space: nowrap;
+  text-align: right;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+/* Box content - width is set per level above */
+.lineage-bar-content {
+  margin-bottom: 0;
+  padding: 0 15rpx;
+  border-radius: 8rpx;
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  border: 1rpx solid #90caf9;
+  height: 80rpx;
+  background: #bbdefb;
+  flex-shrink: 0;
+}
+.lineage-bar-name {
+  font-family: "SimSun", serif;
+  font-size: 26rpx;
+  color: #000;
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  margin-right: 10rpx;
+}
+.lineage-bar-year {
+  font-size: 18rpx;
+  color: #888;
+  font-family: Consolas, monospace;
+  flex-shrink: 0;
+  background: inherit;
+  height: 100%;
+  padding-left: 10rpx;
+  display: flex;
+  align-items: center;
+}

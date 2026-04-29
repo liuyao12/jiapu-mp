@@ -1,0 +1,19 @@
+{
+  "pages": [
+    "pages/tree/tree",
+    "pages/upload-font/upload-font"
+  ],
+  "window": {
+    "navigationBarTitleText": "我的个人工具",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f0f2f5"
+  },
+  "permission": {
+    "scope.writePhotosAlbum": {
+      "desc": "用于将家谱图片保存到相册"
+    }
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,34 @@
+/** app.wxss **/
+
+/* Ensure the page takes up the full height of the mobile screen */
+page {
+  height: 100%;
+  background-color: #f0f2f5;
+  /* Standard WeChat font stack for best readability on iOS and Android */
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica,
+    Segoe UI, Arial, Roboto, 'PingFang SC', 'miui', 'Hiragino Sans GB', 'Microsoft Yahei',
+    sans-serif;
+}
+
+/* Global "Reset": Similar to box-sizing: border-box in web development */
+/* This prevents padding from making elements wider than their defined width */
+view, scroll-view, text, button, input, textarea, picker {
+  box-sizing: border-box;
+}
+
+/* Shared Utility for mini buttons used throughout the app */
+.mini-btn {
+  margin-right: 10rpx;
+  display: inline-block;
+}
+
+/* Common form styles (if you add more pages later) */
+.input-placeholder {
+  color: #ccc;
+  font-size: 24rpx;
+}
+
+/* Text color helpers */
+.text-primary { color: #0277bd; }
+.text-grey { color: #999; }
+.text-red { color: #c62828; }

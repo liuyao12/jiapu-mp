@@ -1,0 +1,15 @@
+{
+  "pages": [
+    "pages/tree/tree-simple",
+    "pages/upload-font/upload-font",
+    "pages/test-minimal/test-minimal"
+  ],
+  "window": {
+    "navigationBarTitleText": "我的个人工具",
+    "navigationBarBackgroundColor": "#ffffff",
+    "navigationBarTextStyle": "black",
+    "backgroundColor": "#f0f2f5"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

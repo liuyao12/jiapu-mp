@@ -1,0 +1,6 @@
+{
+  "usingComponents": {
+    "profile-editor": "/components/profile-editor/profile-editor"
+  },
+  "navigationBarTitleText": "家谱树"
+}
