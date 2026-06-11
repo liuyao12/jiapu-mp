@@ -273,13 +273,27 @@ text, view, button, input { font-weight: normal !important; }
 }
 .screenshot-preview-panel {
   width: 100%;
-  max-height: 96vh;
+  max-height: 92vh;
   background: #fff;
-  border-radius: 16rpx 16rpx 0 0;
-  padding: 18rpx 24rpx 28rpx;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 8rpx 24rpx 28rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  transition: transform 0.16s ease-out;
+}
+.screenshot-preview-drag-handle {
+  height: 42rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.screenshot-preview-handle-bar {
+  width: 84rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #d7dce2;
 }
 .screenshot-preview-header {
   height: 58rpx;
@@ -561,7 +575,12 @@ text, view, button, input { font-weight: normal !important; }
 .standard-node .node-inner { height: calc(100% + 1rpx); }
 .timeline-node .node-inner { border-right-width: 0; }
 .timeline-node-year-edge { position: absolute; z-index: 2; pointer-events: none; }
-.timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 2; pointer-events: none; }
+.timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 15; pointer-events: none; }
+.node-border-edge { position: absolute; pointer-events: none; z-index: 15; }
+.node-border-edge.top { left: 0; right: 0; top: 0; height: 2rpx; }
+.node-border-edge.bottom { left: 0; right: 0; bottom: 0; height: 2rpx; }
+.node-border-edge.left { top: 0; bottom: 0; left: 0; width: 2rpx; }
+.node-border-edge.right { top: 0; bottom: 0; right: 0; width: 2rpx; }
 .node-seam { display: none; }
 .male   .node-inner { background: #bbdefb !important; }
 .female .node-inner { background: #fce4ec !important; }

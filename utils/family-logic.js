@@ -1096,6 +1096,8 @@ function calculateLayout(db, config) {
     const drawableEnd = Math.max(pointWidth, nodeWidth + TIMELINE_YEAR_EDGE_W);
     const markTop = NODE_BORDER_W;
     const markH = Math.max(1, rowH - NODE_BORDER_W * 2);
+    const nodeHasRightEdge = !isLivingPerson(person) && getFadeStartPercent(person, birthYear) === null && nodeWidth > 0;
+    const nodeRightEdgeLeft = nodeWidth;
     const startsByYear = events.reduce((bucket, event) => {
       if (event && Number.isFinite(event.startYear)) {
         bucket[String(event.startYear)] = (bucket[String(event.startYear)] || 0) + 1;
@@ -1129,7 +1131,10 @@ function calculateLayout(db, config) {
         splitLeftCap: false,
         splitRightCap: false,
         splitPoint: false,
-        hideRightCap: isRange && event.startYear !== event.endYear && !!startsByYear[String(event.endYear)],
+        hideRightCap: isRange && event.startYear !== event.endYear && (
+          !!startsByYear[String(event.endYear)]
+          || (nodeHasRightEdge && endX >= nodeRightEdgeLeft)
+        ),
         tone: personalEventToneByName[event.name] !== undefined ? personalEventToneByName[event.name] : 0
       };
     }).filter(Boolean);

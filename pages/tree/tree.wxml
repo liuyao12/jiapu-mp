@@ -99,8 +99,12 @@
                 <view wx:if="{{mark.isRange && !mark.isUnderlay}}" class="personal-event-cap left"></view>
                 <view wx:if="{{mark.isRange && !mark.isUnderlay && !mark.hideRightCap}}" class="personal-event-cap right"></view>
               </view>
-              <view wx:if="{{item.timelineHasEndEdge}}" class="timeline-node-inline-edge" style="left:{{item.timelineEndEdgeLeft || 0}}rpx; width:{{item.timelineEndEdgeW || timelineEdgeMarkWidth}}rpx; background:{{item.nodeBorderColor}};"></view>
+              <view wx:if="{{item.timelineHasEndEdge}}" class="timeline-node-inline-edge node-border-edge timeline-end" style="left:{{item.timelineEndEdgeLeft || 0}}rpx; width:{{item.timelineEndEdgeW || timelineEdgeMarkWidth}}rpx; background:{{item.nodeBorderColor}};"></view>
             </block>
+            <view class="node-border-edge top" style="background:{{item.nodeBorderColor}};"></view>
+            <view class="node-border-edge bottom" style="background:{{item.nodeBorderColor}};"></view>
+            <view class="node-border-edge left" style="background:{{item.nodeBorderColor}};"></view>
+            <view wx:if="{{!showTimeline}}" class="node-border-edge right" style="background:{{item.nodeBorderColor}};"></view>
             <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}">
                <view wx:if="{{showTimeline && item.timelineIconHasExtra}}" class="timeline-icon-fill" style="width:{{item.timelineIconFillW || 0}}rpx; background:{{item.nodeFillColor}};"></view>
                <image wx:if="{{item.iconSrc}}" class="node-icon-img" src="{{item.iconSrc}}" mode="aspectFit"></image>
@@ -350,8 +354,11 @@
     </view>
   </view>
 
-  <view wx:if="{{showScreenshotPreview}}" class="screenshot-preview-overlay">
-    <view class="screenshot-preview-panel">
+  <view wx:if="{{showScreenshotPreview}}" class="screenshot-preview-overlay" bindtap="closeScreenshotPreview">
+    <view class="screenshot-preview-panel" style="transform: translateY({{screenshotPreviewDrawerY}}px);" catchtap="catchTap">
+      <view class="screenshot-preview-drag-handle" catchtouchstart="onScreenshotPreviewTouchStart" catchtouchmove="onScreenshotPreviewTouchMove" catchtouchend="onScreenshotPreviewTouchEnd">
+        <view class="screenshot-preview-handle-bar"></view>
+      </view>
       <view class="screenshot-preview-header">
         <button class="screenshot-preview-close" size="mini" bindtap="closeScreenshotPreview">×</button>
         <text class="screenshot-preview-title">截图预览</text>

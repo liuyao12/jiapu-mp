@@ -163,7 +163,8 @@ Page({
     showScreenshotPreview: false,
     screenshotPreviewImagePath: '',
     screenshotPreviewImageWidth: 0,
-    screenshotPreviewImageHeight: 0
+    screenshotPreviewImageHeight: 0,
+    screenshotPreviewDrawerY: 0
   },
 
   // Non-reactive state cached here (not in this.data to avoid setData overhead)
@@ -6169,7 +6170,13 @@ Page({
     }
 
     let height = bottom + V_PAD;
-    const bottomTimelineRulerY = this.data.showTimeline ? Math.max(RULER_H + 24, height - V_PAD - 32) : null;
+    const bottomTimelineRulerY = this.data.showTimeline
+      ? Math.max(RULER_H + 24, bottom + 48)
+      : null;
+    if (this.data.showTimeline && bottomTimelineRulerY) {
+      const bottomRulerTail = 64;
+      height = Math.max(height, bottomTimelineRulerY + bottomRulerTail + V_PAD);
+    }
     let qr = null;
     if (options.includeQr) {
       const qrSize = TREE_STYLE.screenshotQrSize || 132;
@@ -6418,7 +6425,8 @@ Page({
         showScreenshotPreview: true,
         screenshotPreviewImagePath: filePath,
         screenshotPreviewImageWidth: width || 1,
-        screenshotPreviewImageHeight: height || 1
+        screenshotPreviewImageHeight: height || 1,
+        screenshotPreviewDrawerY: 0
       });
     };
 
@@ -6434,12 +6442,38 @@ Page({
   },
 
   closeScreenshotPreview() {
-    this.setData({
-      showScreenshotPreview: false,
-      screenshotPreviewImagePath: '',
-      screenshotPreviewImageWidth: 0,
-      screenshotPreviewImageHeight: 0
-    });
+    this.setData({ screenshotPreviewDrawerY: this._windowHeight || 667 });
+    setTimeout(() => {
+      if (!this.data.showScreenshotPreview) return;
+      this.setData({
+        showScreenshotPreview: false,
+        screenshotPreviewImagePath: '',
+        screenshotPreviewImageWidth: 0,
+        screenshotPreviewImageHeight: 0,
+        screenshotPreviewDrawerY: 0
+      });
+    }, 120);
+  },
+
+  onScreenshotPreviewTouchStart(e) {
+    this._screenshotPreviewDragStartY = e.touches && e.touches[0] ? e.touches[0].clientY : 0;
+    this._screenshotPreviewDragStartDrawerY = Number(this.data.screenshotPreviewDrawerY || 0);
+  },
+
+  onScreenshotPreviewTouchMove(e) {
+    const touch = e.touches && e.touches[0];
+    if (!touch) return;
+    const deltaY = touch.clientY - (this._screenshotPreviewDragStartY || touch.clientY);
+    this.setData({ screenshotPreviewDrawerY: Math.max(0, (this._screenshotPreviewDragStartDrawerY || 0) + deltaY) });
+  },
+
+  onScreenshotPreviewTouchEnd() {
+    const y = Number(this.data.screenshotPreviewDrawerY || 0);
+    if (y > Math.max(120, (this._windowHeight || 667) * 0.18)) {
+      this.closeScreenshotPreview();
+    } else {
+      this.setData({ screenshotPreviewDrawerY: 0 });
+    }
   },
 
   onPreviewScreenshotImage() {
@@ -7166,11 +7200,17 @@ Page({
       }
       this._drawScreenshotPersonalEventMarks(ctx, node, x, chipY, nodeH);
       if (timelineX) {
+        const strokeW = style.nodeBorderWidth || 2;
+        ctx.fillStyle = fadeBorder;
+        ctx.fillRect(x, chipY, Math.min(strokeW, w), nodeH);
+        ctx.fillRect(x, chipY, w, Math.min(strokeW, nodeH));
+        ctx.fillRect(x, chipY + Math.max(0, nodeH - strokeW), w, Math.min(strokeW, nodeH));
         if (!node.isLiving && baseNodeW > 0 && !(Number.isFinite(fadePercent) && fadePercent > 0 && fadePercent < 100)) {
           const endEdgeW = Math.max(1, timelineExtra || style.nodeBorderWidth || 2);
-          ctx.fillStyle = fadeBorder;
           ctx.fillRect(x + baseNodeW, chipY, endEdgeW, nodeH);
         }
+      } else {
+        this._drawRoundRect(ctx, x, chipY, w, nodeH, 0, 'rgba(0,0,0,0)', fadeBorder, style.nodeBorderWidth);
       }
       const timelineIconBoxLeft = timelineX ? Number(node.timelineIconBoxLeft || 0) : 0;
       const iconCenterX = timelineX ? timelineIconBoxLeft + timelineIconBoxSize / 2 : 40;

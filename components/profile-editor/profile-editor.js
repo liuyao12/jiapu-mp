@@ -1341,8 +1341,8 @@ Component({
           this.triggerEvent('updatefield', { field: 'hometown', value: hint });
         }
       }
-      if ((this.data.drawerY || 0) > 70) {
-        patch.drawerY = 50;
+      if ((this.data.drawerY || 0) > 0) {
+        patch.drawerY = 0;
       }
       this._setDrawerInternalState(patch);
     },
