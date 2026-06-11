@@ -2,5 +2,5 @@
   "usingComponents": {
     "profile-editor": "/components/profile-editor/profile-editor"
   },
-  "navigationBarTitleText": "我的个人工具"
+  "navigationBarTitleText": "家谱编辑器"
 }

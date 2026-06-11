@@ -12,3 +12,23 @@ $RECYCLE.BIN/
 
 # Node.js
 node_modules/
+
+# Local secrets and overrides
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+
+# WeChat DevTools local settings
+project.private.config.json
+
+# Private exported genealogy data
+family_*.json
+*_家谱_*.json
+exports/
+local-data/
+
+# App-specific public QR; keep the real one locally.
+assets/miniprogram-qr.png

@@ -1,11 +1,9 @@
 {
   "pages": [
-    "pages/tree/tree-simple",
-    "pages/upload-font/upload-font",
-    "pages/test-minimal/test-minimal"
+    "pages/tree/tree"
   ],
   "window": {
-    "navigationBarTitleText": "我的个人工具",
+    "navigationBarTitleText": "家谱编辑器",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#f0f2f5"

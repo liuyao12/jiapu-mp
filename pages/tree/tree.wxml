@@ -14,83 +14,106 @@
         </view>
       </view>
       <view class="title-right">
-        <button class="tb-btn icon-btn fit-width-btn {{viewScale < 1 ? 'active' : ''}}" size="mini" bindtap="toggleFitWidth" title="适应宽度">↔</button>
+        <button class="tb-btn action-btn screenshot-btn" size="mini" bindtap="onExportScreenshot" aria-label="截图">
+          <view class="screenshot-icon">
+            <image class="screenshot-image" src="/assets/camera-screenshot.png" mode="aspectFit"></image>
+          </view>
+        </button>
       </view>
     </view>
 
-    <!-- Row 2: Share on left, Toggles in center -->
+    <!-- Row 2: Backup on left, Toggles in center -->
     <view class="bar-row toggle-row">
       <view class="toggle-left">
-        <button class="tb-btn action-btn" size="mini" bindtap="shareGenealogy">📤 分享</button>
+        <button class="tb-btn action-btn backup-btn" size="mini" bindtap="onBackup">💾 备份</button>
       </view>
       <view class="toggle-center">
-        <label class="toggle-item">
-          <switch checked="{{showSpouses}}"  bindchange="toggleSpouses"  color="#0277bd" style="transform:scale(0.6);"/>
+        <label class="toggle-item first-toggle">
+          <view class="toggle-switch-slot">
+            <switch class="toggle-switch" checked="{{showSpouses}}"  bindchange="toggleSpouses"  color="#0277bd"/>
+          </view>
           <text class="toggle-text">配偶</text>
         </label>
         <label class="toggle-item">
-          <switch checked="{{showMaternal}}" bindchange="toggleMaternal" color="#0277bd" style="transform:scale(0.6);"/>
+          <view class="toggle-switch-slot">
+            <switch class="toggle-switch" checked="{{showMaternal}}" bindchange="toggleMaternal" color="#0277bd"/>
+          </view>
           <text class="toggle-text">外甥</text>
         </label>
         <label class="toggle-item">
-          <switch checked="{{showTimeline}}" bindchange="toggleTimeline" color="#0277bd" style="transform:scale(0.6);"/>
+          <view class="toggle-switch-slot">
+            <switch class="toggle-switch" checked="{{showTimeline}}" bindchange="toggleTimeline" color="#0277bd"/>
+          </view>
           <text class="toggle-text">时间轴</text>
         </label>
+        <button class="tb-btn action-btn event-btn timeline-event-btn {{showTimeline ? '' : 'is-disabled'}}" size="mini" disabled="{{!showTimeline}}" bindtap="openTimelineEventPanel">
+          <text class="event-menu-text">☰ 事件</text>
+        </button>
       </view>
-      <view class="toggle-right">
-      </view>
+      <view class="toggle-right"></view>
     </view>
 
   </view>
 
   <!-- Empty tree state: show a prominent add-ancestor button -->
-  <view wx:if="{{!db.activeRootId || nodes.length === 0}}" class="empty-state">
+  <view wx:if="{{showEmptyTree}}" class="empty-state">
     <view class="empty-icon">🌳</view>
     <text class="empty-tip">家谱空空如也</text>
     <text class="empty-sub">点击下方按钮，添加第一位始祖</text>
     <button class="add-ancestor-btn" bindtap="onAddAncestorBtnTap">＋ 添加始祖</button>
   </view>
 
-  <view wx:else class="tree-area-outer">
+  <view wx:if="{{showTreeArea}}" class="tree-area-outer">
     <!-- 主内容区域 -->
-    <scroll-view id="mainScroll" class="tree-area-body" scroll-x="{{!lockHorizontalScroll}}" scroll-y="{{true}}" scroll-left="{{mainScrollLeft}}" scroll-top="{{mainScrollTop}}" bindscroll="onMainScroll">
+    <scroll-view id="mainScroll" class="tree-area-body" scroll-x="{{true}}" scroll-y="{{true}}" scroll-left="{{treeScrollLeft}}" scroll-top="{{treeScrollTop}}" bindscroll="onTreeScroll">
       <view class="canvas-wrapper">
         <!-- 标尺（时间轴视图：年份标尺；标准视图：代际块） -->
-        <view class="ruler-container" style="margin-left:{{fitWidthOffset}}rpx;">
+        <view class="ruler-container" style="width:{{maxR}}rpx;">
           <!-- 标准视图：代际块 -->
           <view wx:if="{{!showTimeline}}">
-            <!-- 每个块：左边界在垂直线位置（x=40,120,200...对齐节点左缘），块宽80，内容居中 -->
-            <view wx:for="{{rulerTicks}}" wx:key="x" class="gen-block" style="left:{{(item.x || 40) * viewScale}}rpx; width:{{80 * viewScale}}rpx;">
-              <text wx:if="{{item.label}}" class="gen-block-label" style="font-size:{{20 * viewScale}}rpx;">{{item.label}}</text>
+            <view wx:for="{{rulerTicks}}" wx:key="x" class="gen-block {{item.isLast ? 'last' : ''}}" style="left:{{item.x || 40}}rpx; width:80rpx;">
+              <text wx:if="{{item.label}}" class="gen-block-label">{{item.label}}</text>
             </view>
           </view>
           <!-- 时间轴视图：年份刻度 -->
           <view wx:if="{{showTimeline}}">
-            <view wx:for="{{rulerTicks}}" wx:key="x" class="tick {{item.isCurrentYear?'current-year':''}}" style="left:{{((item.x || 0) + 40) * viewScale}}rpx">
-              <text wx:if="{{item.label}}" class="tick-label" style="font-size:{{24 * viewScale}}rpx">{{item.label}}</text>
+            <view wx:for="{{rulerTicks}}" wx:key="x" class="tick {{item.isCurrentYear?'current-year':''}}" style="left:{{(item.x || 0) + 40 + timelineYearCenterOffset}}rpx">
+              <text wx:if="{{item.label}}" class="tick-label">{{item.label}}</text>
             </view>
           </view>
-          <!-- 2026年线（从标尺顶部开始，延伸到屏幕底部） -->
-          <view wx:if="{{showTimeline && currentYearLineX >= 0}}" class="current-year-line" style="left:{{((currentYearLineX || 0) + 40) * viewScale}}rpx;"></view>
-          <!-- 2026年标签 - 在竖线右侧 -->
-          <text wx:if="{{showTimeline && currentYearLineX >= 0}}" class="current-year-label" style="left:{{((currentYearLineX || 0) + 94) * viewScale}}rpx; font-size:{{22 * viewScale}}rpx; padding:{{4 * viewScale}}rpx {{10 * viewScale}}rpx; border-radius:{{6 * viewScale}}rpx; box-shadow:0 {{2 * viewScale}}rpx {{8 * viewScale}}rpx rgba(230,81,0,0.2);">{{currentYear || 2026}}年</text>
         </view>
 
-        <!-- Canvas内容（可缩放） -->
-        <view class="canvas" style="width:{{maxR}}rpx; height:{{maxH}}rpx; transform: scale({{viewScale}}); transform-origin: 0 0; margin-left:{{fitWidthOffset}}rpx;">
-          <view class="tree-content">
-        <view wx:for="{{lines}}" wx:key="index" class="line {{item.type || 'stem'}}" style="left:{{(item.x || 0) + 40}}rpx; top:{{item.y || 0}}rpx; width:{{item.w || 1.5}}rpx; height:{{item.h || 1.5}}rpx;"></view>
-        <view wx:for="{{nodes}}" wx:key="id" class="node {{item.gender || 'unknown'}} {{item.isSpouse?'spouse':''}}" style="left:{{(item.x || 0) + 40}}rpx; top:{{item.y || 0}}rpx; width:{{item.w || 80}}rpx; height:{{item.h || 72}}rpx;" bindtap="onNodeTap" data-id="{{item.id}}">
-          <view class="node-inner" style="{{item.maskStyle || ''}}">
-            <view class="icon-box" catchtap="onToggleCollapse" data-id="{{item.id}}">
-               <view wx:if="{{item.iconType == 'plus'}}" class="circle-icon"><view class="line-h"></view><view class="line-v"></view></view>
-               <view wx:if="{{item.iconType == 'minus'}}" class="circle-icon"><view class="line-h"></view></view>
-               <view wx:if="{{item.iconType == 'leaf'}}" class="leaf-dot">·</view>
-               <view wx:if="{{item.iconType == 'marriage'}}" class="spouse-icon">⚭</view>
+        <!-- Canvas内容 -->
+        <view class="canvas" style="width:{{maxR}}rpx; height:{{maxH + treeContentBottomPadding}}rpx;">
+          <view class="tree-content" style="padding-bottom:{{treeContentBottomPadding}}rpx;">
+        <view wx:if="{{showTimeline}}" wx:for="{{timelineEventBands}}" wx:key="id" class="timeline-event-band tone-{{item.tone}} {{item.isCurrentYear ? 'current-year-event' : ''}}" style="left:{{(item.x || 0) + 40}}rpx; width:{{item.w || timelineEdgeMarkWidth}}rpx; height:{{maxH + treeContentBottomPadding}}rpx;">
+          <view class="timeline-event-edge left" style="left:{{item.edgeInset}}rpx; width:{{item.edgeMarkWidth || timelineEdgeMarkWidth}}rpx;"></view>
+          <view class="timeline-event-edge right" style="right:{{item.edgeInset}}rpx; width:{{item.edgeMarkWidth || timelineEdgeMarkWidth}}rpx;"></view>
+          <text class="timeline-event-label" style="top:{{treeStyle.eventLabelTop + (item.labelLane || 0) * treeStyle.eventLabelRowGap}}rpx; transform:translateX(-50%) translateX({{item.labelOffsetX || 0}}rpx); color:{{item.labelColor || treeStyle.eventLabelColor}};">{{item.label}}</text>
+        </view>
+        <view wx:for="{{lines}}" wx:key="index" class="line {{item.type || 'stem'}} {{item.lineage || 'patrilineal'}} {{showTimeline ? 'timeline-line' : ''}}" style="left:{{(item.drawX || 0) + 40}}rpx; top:{{(item.drawY || 0) + treeTopGap}}rpx; width:{{item.drawW || treeStyle.lineWidth}}rpx; height:{{item.drawH || treeStyle.lineWidth}}rpx;"></view>
+        <view wx:for="{{nodes}}" wx:key="id" class="node {{item.gender || 'unknown'}} {{item.isSpouse?'spouse':''}} {{showTimeline ? 'timeline-node' : 'standard-node'}}" style="left:{{(item.x || 0) + 40 + (showTimeline ? timelineEdgeInset : 0)}}rpx; top:{{(item.y || 0) + treeTopGap}}rpx; width:{{showTimeline ? item.timelineRenderW : item.w}}rpx; height:{{item.h || 56}}rpx;" bindtap="onNodeTap" data-id="{{item.id}}">
+          <view class="node-inner" style="{{item.maskStyle || ''}} background:{{item.gender == 'male' ? treeStyle.maleFill : item.gender == 'female' ? treeStyle.femaleFill : treeStyle.unknownFill}}; border-color:{{item.gender == 'male' ? treeStyle.maleBorder : item.gender == 'female' ? treeStyle.femaleBorder : treeStyle.unknownBorder}};">
+            <block wx:if="{{showTimeline}}">
+              <view wx:for="{{item.personalEventMarks}}" wx:for-item="mark" wx:key="id" class="personal-event-mark tone-{{mark.tone}} {{mark.isRange ? 'range' : ''}} {{mark.splitLeftCap ? 'split-left-cap' : ''}} {{mark.splitRightCap ? 'split-right-cap' : ''}}" style="left:{{mark.x}}rpx; width:{{mark.w || 2}}rpx; top:{{mark.top || 2}}rpx; height:{{mark.h || 40}}rpx; bottom:auto;">
+                <view wx:if="{{mark.isRange}}" class="personal-event-cap left"></view>
+                <view wx:if="{{mark.isRange && !mark.hideRightCap}}" class="personal-event-cap right"></view>
+              </view>
+              <view wx:if="{{item.timelineHasEndEdge}}" class="timeline-node-inline-edge" style="left:{{item.timelineEndEdgeLeft || 0}}rpx; width:{{item.timelineEndEdgeW || timelineEdgeMarkWidth}}rpx; background:{{item.nodeBorderColor}};"></view>
+            </block>
+            <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}">
+               <view wx:if="{{showTimeline && item.timelineIconHasExtra}}" class="timeline-icon-fill" style="width:{{item.timelineIconFillW || 0}}rpx; background:{{item.nodeFillColor}};"></view>
+               <image wx:if="{{item.iconSrc}}" class="node-icon-img" src="{{item.iconSrc}}" mode="aspectFit"></image>
+               <view wx:elif="{{item.iconType == 'marriage'}}" class="spouse-icon" style="color:{{item.iconColor || treeStyle.marriageIconColor}};">⚭</view>
             </view>
-            <text class="p-name">{{item.name || '未命名'}}</text>
-            <text class="p-life">{{item.life || ''}}</text>
+            <view class="p-label" style="margin-left:{{item.labelMarginLeft}}rpx;">
+              <text wx:if="{{item.hometownPrefix}}" class="p-hometown" style="color:{{treeStyle.nameColor}};">{{item.hometownPrefix}}{{item.nameSeparator}}</text>
+              <text class="p-name" style="color:{{treeStyle.nameColor}};">{{item.nameText || item.name || '未命名'}}</text>
+              <text wx:if="{{item.rank}}" class="p-rank" style="color:{{treeStyle.nameColor}};"> ({{item.rank}})</text>
+            </view>
+            <text class="p-life" style="color:{{treeStyle.lifeColor}};">{{item.life || ''}}</text>
           </view>
+          <view class="node-seam" style="background:{{item.gender == 'male' ? treeStyle.maleBorder : item.gender == 'female' ? treeStyle.femaleBorder : treeStyle.unknownBorder}};"></view>
         </view>
       </view>
         </view>
@@ -112,6 +135,13 @@
           </view>
         </view>
 
+        <view class="dropdown-item ai-tree-item" catchtap="openAiImportPanel">
+          <view class="progenitor-dropdown-row">
+            <text class="progenitor-dropdown-name">✦ 名人家谱 问AI</text>
+            <text class="progenitor-dropdown-action">提示词生成</text>
+          </view>
+        </view>
+
         <!-- Thick separator below new tree option -->
         <view class="workspace-separator"></view>
 
@@ -120,20 +150,32 @@
           <!-- Workspace separator (thick) between different workspaces -->
           <view wx:if="{{wsIndex > 0}}" class="workspace-separator"></view>
 
-          <!-- Empty workspace -->
-          <view wx:if="{{workspace.progenitors.length === 0}}" class="empty-workspace">
-            <text>暂无始祖</text>
-          </view>
+          <view class="workspace-swipe-shell {{workspace.canDelete ? 'can-delete' : ''}} {{workspace.deleteOpen ? 'is-open' : ''}}" data-workspace-id="{{workspace.id}}" bindtouchstart="onWorkspaceTouchStart" bindtouchmove="onWorkspaceTouchMove" bindtouchend="onWorkspaceTouchEnd" bindtouchcancel="onWorkspaceTouchEnd">
+            <view wx:if="{{workspace.canDelete}}" class="workspace-delete-panel">
+              <button class="workspace-delete-action" size="mini" catchtap="onDeleteWorkspace" data-workspace-id="{{workspace.id}}">删除</button>
+            </view>
+            <view wx:if="{{workspace.canDelete}}" class="workspace-delete-rail" catchtap="onWorkspaceDeleteRailTap" data-workspace-id="{{workspace.id}}">
+              <text class="workspace-delete-rail-mark">‹</text>
+            </view>
+            <view class="workspace-swipe-content">
+              <!-- Empty workspace -->
+              <view wx:if="{{workspace.progenitors.length === 0}}" class="empty-workspace">
+                <text>暂无始祖</text>
+              </view>
 
-          <!-- Progenitor List -->
-          <view wx:for="{{workspace.progenitors}}" wx:for-item="item" wx:for-index="idx" wx:key="id" class="dropdown-item {{item._isLast ? 'last-in-workspace' : ''}}" catchtap="onSelectProgenitor" data-id="{{item.id}}" data-index="{{idx}}">
-            <view class="progenitor-dropdown-row">
-              <text class="progenitor-dropdown-name">{{item.name}}</text>
-              <text wx:if="{{item.bYear}}" class="progenitor-dropdown-year-inline">生于 {{item.bYear}}年</text>
-              <view class="progenitor-stats-icons">
-                <text class="stat-icon male">♂ {{item.maleDescendants || 0}}</text>
-                <text class="stat-icon female">♀ {{item.femaleDescendants || 0}}</text>
-                <text class="stat-icon marriage">👰 {{item.marriageCount || 0}}</text>
+              <!-- Progenitor List -->
+              <view wx:for="{{workspace.progenitors}}" wx:for-item="item" wx:for-index="idx" wx:key="id" class="dropdown-item {{item._isLast ? 'last-in-workspace' : ''}}" catchtap="onSelectProgenitor" data-id="{{item.id}}" data-index="{{idx}}">
+                <view class="progenitor-dropdown-row">
+                  <text class="progenitor-dropdown-name">{{item.name}}</text>
+                  <view class="progenitor-dropdown-year-inline">
+                    <text wx:if="{{item.bYear}}">{{item.bYear}}年</text>
+                  </view>
+                  <view class="progenitor-stats-icons">
+                    <text class="stat-icon male">♂ {{item.maleDescendants || 0}}</text>
+                    <text class="stat-icon female">♀ {{item.femaleDescendants || 0}}</text>
+                    <text class="stat-icon marriage">⚭ {{item.marriageCount || 0}}</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -142,19 +184,203 @@
     </view>
   </view>
 
+  <view wx:if="{{showAiImportPanel}}" class="ai-import-overlay" bindtap="closeAiImportPanel">
+    <view class="ai-import-panel" catchtap="catchTap">
+      <view class="ai-import-header">
+        <view class="ai-import-title-group">
+          <text class="ai-import-title">名人家谱 问AI</text>
+          <text class="ai-import-subtitle">复制提示词到你常用的 AI，再把 JSON 粘贴回来。</text>
+        </view>
+        <button class="ai-import-close" bindtap="closeAiImportPanel">×</button>
+      </view>
 
+      <scroll-view class="ai-import-body" scroll-y>
+        <view class="ai-import-section">
+          <text class="ai-import-label">人物、家族或多个姓名</text>
+          <input class="ai-import-input" value="{{aiPromptTarget}}" bindinput="onAiPromptTargetInput" placeholder="如：唐代李氏皇族、苏轼 苏辙、李世民 武则天" placeholder-class="ai-import-placeholder" adjust-position="{{false}}" />
+        </view>
 
-  <!-- ISOLATED COMPONENT -->
+        <view class="ai-import-section">
+          <view class="ai-import-section-head prompt">
+            <view class="ai-import-prompt-title-line">
+              <text class="ai-import-label inline">提示词</text>
+              <view class="ai-import-script-toggle">
+                <view class="ai-import-script-option {{!aiUseTraditionalChinese ? 'active' : ''}}" data-variant="simplified" bindtap="onAiChineseVariantTap">
+                  <text>简</text>
+                </view>
+                <view class="ai-import-script-option {{aiUseTraditionalChinese ? 'active' : ''}}" data-variant="traditional" bindtap="onAiChineseVariantTap">
+                  <text>繁</text>
+                </view>
+              </view>
+            </view>
+            <button class="ai-import-small-btn" size="mini" bindtap="copyAiPrompt">复制</button>
+          </view>
+          <textarea class="ai-import-textarea prompt" value="{{aiPromptText}}" bindinput="onAiPromptTextInput" maxlength="-1"></textarea>
+        </view>
+
+        <view class="ai-import-section">
+          <view class="ai-import-section-head">
+            <text class="ai-import-label">AI 返回的 JSON</text>
+            <button class="ai-import-small-btn" size="mini" bindtap="pasteAiJsonFromClipboard">粘贴</button>
+          </view>
+          <textarea class="ai-import-textarea json" value="{{aiJsonText}}" bindinput="onAiJsonTextInput" maxlength="-1" placeholder="把 AI 输出的 JSON 粘贴在这里" placeholder-class="ai-import-placeholder"></textarea>
+        </view>
+      </scroll-view>
+
+      <view class="ai-import-footer">
+        <button class="ai-import-secondary" bindtap="closeAiImportPanel">取消</button>
+        <button class="ai-import-primary" bindtap="onImportAiJson">导入 JSON</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showJsonImportPanel}}" class="ai-import-overlay" bindtap="closeJsonImportPanel">
+    <view class="ai-import-panel json-import-panel" catchtap="catchTap">
+      <view class="ai-import-header">
+        <view class="ai-import-title-group">
+          <text class="ai-import-title">导入 JSON</text>
+          <text class="ai-import-subtitle">粘贴 JSON 文本，或从微信聊天/群文件选择 JSON。</text>
+        </view>
+        <button class="ai-import-close" bindtap="closeJsonImportPanel">×</button>
+      </view>
+
+      <scroll-view class="ai-import-body" scroll-y>
+        <view class="ai-import-section">
+          <view class="ai-import-section-head">
+            <text class="ai-import-label">JSON 文本</text>
+            <button class="ai-import-small-btn" size="mini" bindtap="pasteJsonImportFromClipboard">粘贴</button>
+          </view>
+          <textarea class="ai-import-textarea json" value="{{jsonImportText}}" bindinput="onJsonImportTextInput" maxlength="-1" placeholder="把导出的 JSON 或 AI 返回的 JSON 粘贴在这里" placeholder-class="ai-import-placeholder"></textarea>
+        </view>
+      </scroll-view>
+
+      <view class="ai-import-footer">
+        <button class="ai-import-secondary" bindtap="closeJsonImportPanel">取消</button>
+        <button class="ai-import-secondary" bindtap="onChooseImportFile">选文件</button>
+        <button class="ai-import-primary" bindtap="onImportJsonText">导入</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showSpousePicker}}" class="spouse-picker-overlay" bindtap="closeSpousePicker">
+    <view class="spouse-picker-panel" catchtap="catchTap">
+      <view class="spouse-picker-header">
+        <view class="spouse-picker-title-group">
+          <text class="spouse-picker-title">{{spousePickerTitle}}</text>
+          <text wx:if="{{spousePickerTargetName}}" class="spouse-picker-subtitle">{{spousePickerTargetName}}</text>
+        </view>
+        <button class="spouse-picker-close" bindtap="closeSpousePicker">×</button>
+      </view>
+      <text class="spouse-picker-hint">{{spousePickerHint}}</text>
+      <scroll-view class="spouse-picker-list" scroll-y>
+        <view wx:if="{{spousePickerResults.length === 0}}" class="spouse-picker-empty">
+          <text>没有可选成员</text>
+        </view>
+        <view
+          wx:for="{{spousePickerResults}}"
+          wx:key="id"
+          class="spouse-picker-item {{item.gender || 'unknown'}}"
+          catchtap="onSelectExistingSpouse"
+          data-id="{{item.id}}"
+        >
+          <view class="spouse-picker-person">
+            <view class="spouse-picker-name-row">
+              <text class="spouse-picker-name">{{item._displayName}}</text>
+              <text wx:if="{{item._lifeLabel}}" class="spouse-picker-life">{{item._lifeLabel}}</text>
+            </view>
+            <view class="spouse-picker-meta-row">
+              <text class="spouse-picker-chip {{item._workspaceRank === 0 ? 'current' : 'other'}}">{{item._workspaceLabel}}</text>
+              <text wx:if="{{item._progenitorName}}" class="spouse-picker-root">{{item._progenitorName}}</text>
+            </view>
+          </view>
+          <text class="spouse-picker-action">选择</text>
+        </view>
+      </scroll-view>
+      <button class="spouse-picker-new" bindtap="onContinueNewSpouse">{{spousePickerNewLabel}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showTimelineEventPanel}}" class="timeline-event-overlay" bindtap="closeTimelineEventPanel">
+    <view class="timeline-event-panel" catchtap="catchTap">
+      <view class="timeline-event-header">
+        <text class="timeline-event-title">时间轴事件</text>
+      </view>
+      <scroll-view class="timeline-event-list" scroll-y>
+        <view class="timeline-event-section">
+          <text class="timeline-event-section-title">全局事件</text>
+          <view wx:if="{{!showTimelineEventEditor}}" class="timeline-event-chip-row">
+            <view wx:for="{{timelineEventRows}}" wx:key="id" class="timeline-event-chip tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}}" catchtap="onToggleTimelineEventChip" data-id="{{item.id}}">
+              <text class="timeline-event-chip-name">{{item.name}}</text>
+              <text class="timeline-event-chip-year">{{item.yearLabel}}</text>
+            </view>
+            <view wx:if="{{!showTimelineEventDraft}}" class="timeline-event-mini-add" catchtap="onShowTimelineEventDraft">+</view>
+            <view wx:if="{{!showTimelineEventDraft}}" class="timeline-event-edit-icon" catchtap="onEditTimelineEvents">✎</view>
+          </view>
+          <view wx:if="{{showTimelineEventEditor}}" class="timeline-event-edit-flow">
+            <view wx:for="{{timelineEventRows}}" wx:key="id" class="timeline-event-edit-row">
+              <view class="timeline-event-edit-chip tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}} {{item.isDefault ? '' : 'has-delete'}}">
+                <input class="timeline-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="name" placeholder="事件名" placeholder-class="timeline-event-placeholder-name" adjust-position="{{false}}" catchtap="catchTap" />
+                <input class="timeline-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="years" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" adjust-position="{{false}}" catchtap="catchTap" />
+                <view wx:if="{{!item.isDefault}}" class="timeline-event-delete" catchtap="onDeleteTimelineEvent" data-id="{{item.id}}">×</view>
+              </view>
+            </view>
+            <button class="timeline-event-edit-done" size="mini" catchtap="onFinishTimelineEventEditing">OK</button>
+          </view>
+          <view wx:if="{{showTimelineEventDraft}}" class="timeline-event-form">
+            <view class="timeline-event-edit-chip tone-0 is-new">
+              <input class="timeline-event-edit-input name" style="width:{{timelineEventDraftNameWidth}};" value="{{timelineEventDraftName}}" placeholder="事件名" placeholder-class="timeline-event-placeholder-name" bindinput="onTimelineEventDraftInput" data-field="timelineEventDraftName" adjust-position="{{false}}" catchtap="catchTap" />
+              <input class="timeline-event-edit-input year" style="width:{{timelineEventDraftYearWidth}};" value="{{timelineEventDraftYears}}" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" bindinput="onTimelineEventDraftInput" data-field="timelineEventDraftYears" adjust-position="{{false}}" catchtap="catchTap" />
+            </view>
+            <button class="timeline-event-add" size="mini" catchtap="onAddTimelineEvent">确定</button>
+            <view class="timeline-event-cancel" catchtap="onCancelTimelineEventDraft">×</view>
+          </view>
+        </view>
+
+        <view class="timeline-event-section personal">
+          <text class="timeline-event-section-title">个人事件</text>
+          <view wx:if="{{timelinePersonalEventRows.length > 0}}" class="timeline-event-chip-row personal">
+            <view wx:for="{{timelinePersonalEventRows}}" wx:key="id" class="timeline-event-chip personal tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}}" catchtap="onToggleTimelinePersonalEvent" data-index="{{index}}">
+              <text class="timeline-event-chip-name">{{item.name}}</text>
+              <text class="timeline-event-chip-year">{{item.countLabel}}</text>
+            </view>
+          </view>
+          <view wx:else class="timeline-event-empty">暂无个人事件</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{showScreenshotPreview}}" class="screenshot-preview-overlay">
+    <view class="screenshot-preview-panel">
+      <view class="screenshot-preview-header">
+        <button class="screenshot-preview-close" size="mini" bindtap="closeScreenshotPreview">×</button>
+        <text class="screenshot-preview-title">截图预览</text>
+        <view class="screenshot-preview-header-spacer"></view>
+      </view>
+
+      <scroll-view class="screenshot-preview-wrap" scroll-y="{{true}}" scroll-x="{{true}}">
+        <image class="screenshot-preview-image" src="{{screenshotPreviewImagePath}}" mode="widthFix" bindtap="onPreviewScreenshotImage"></image>
+      </scroll-view>
+
+      <view class="screenshot-preview-actions">
+        <button class="screenshot-preview-action" size="mini" bindtap="onSaveScreenshotPreview">保存</button>
+        <button class="screenshot-preview-action primary" size="mini" bindtap="onShareScreenshotPreview">分享</button>
+      </view>
+    </view>
+  </view>
+
   <profile-editor
     show="{{showDrawer}}"
     person="{{_editingPerson}}"
     spouses="{{_displaySpouses}}"
     children="{{_displayChildren}}"
     father="{{_displayFather}}"
+    mother="{{_displayMother}}"
+    paternalRows="{{_displayPaternalRows}}"
+    personalEventSuggestions="{{_personalEventSuggestions}}"
     motherRange="{{motherRange}}"
     currentMotherName="{{currentMotherName}}"
     pendingMotherSelected="{{_pendingMotherSelected}}"
-    currentRootId="{{db.activeRootId || ''}}"
     showJumpBtn="{{showJumpBtn}}"
     canAddFather="{{canAddFather}}"
     creatingProfile="{{creatingProfile}}"
@@ -163,6 +389,8 @@
     bind:closeprofile="onCloseDrawer"
     bind:commit="onCommit"
     bind:updatefield="onUpdateField"
+    bind:fieldblur="onProfileFieldBlur"
+    bind:personaleventvisibilitychange="onPersonalEventVisibilityChange"
     bind:motherchange="onMotherChange"
     bind:jump="onNodeTap"
     bind:jumptotree="onJumpToHisTree"
@@ -172,5 +400,5 @@
     bind:delete="onDelete"
   />
 
-  <canvas type="2d" id="exportCanvas" style="position:fixed; left:9999px; width:{{maxR}}px; height:{{maxH}}px;"></canvas>
+  <canvas type="2d" id="screenshotCanvas" class="screenshot-canvas"></canvas>
 </view>

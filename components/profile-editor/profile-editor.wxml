@@ -1,213 +1,251 @@
-<view class="drawer-mask {{show?'show':''}}" bindtap="onClose"></view>
-<view class="drawer {{show?'show':''}}" style="transform: translateY({{drawerY}}px);">
+<view class="drawer-mask {{drawerShowClass}}" bindtap="onClose"></view>
+<view class="drawer {{drawerShowClass}} {{drawerMotionClass}}" style="transform: translateY({{drawerY}}px);">
   <view class="drag-handle" bindtouchstart="touchStart" bindtouchmove="touchMove" bindtouchend="touchEnd">
     <view class="handle-bar"></view>
   </view>
 
-  <!-- Header: always shows name + gender; clicking the name toggles the name section below -->
   <view class="profile-header">
     <view class="name-gender-row">
       <view class="name-edit-area">
-        <!-- Collapsed: show display name only -->
-        <view wx:if="{{!nameSectionExpanded && !creatingProfile}}" class="name-row">
-          <view bindtap="onToggleNameSection" class="val-text name-large">
-            {{displayName}}
+        <view wx:if="{{showNameCollapsed}}" class="profile-read-section">
+          <text wx:if="{{profileSummaryHometown}}" class="profile-hometown">〔{{profileSummaryHometown}}〕</text>
+          <view class="name-row">
+            <view class="val-text name-large">
+              <text>{{displayName}}</text>
+              <text wx:if="{{displayNameRankSuffix}}" class="name-rank-suffix">{{displayNameRankSuffix}}</text>
+            </view>
+          <view class="header-icons" catchtap="stop">
+              <view class="profile-name-edit-icon" catchtap="onToggleNameSection">✎</view>
+              <view wx:if="{{showHeaderTreeChip}}" class="icon-btn header-tree-icon" catchtap="onJumpToTree" data-id="{{person.id}}">
+                <view class="profile-lineage-icon">
+                  <view class="profile-lineage-connector vertical"></view>
+                  <view class="profile-lineage-connector middle"></view>
+                  <view class="profile-lineage-connector lower"></view>
+                  <view class="profile-lineage-bar first"></view>
+                  <view class="profile-lineage-bar middle"></view>
+                  <view class="profile-lineage-bar lower"></view>
+                </view>
+              </view>
           </view>
-          <view class="header-icons" wx:if="{{showJumpBtn}}">
-            <view class="icon-btn" bindtap="onJumpToTree" data-id="{{person.id}}">🌳</view>
+          </view>
+          <text wx:if="{{profileSummaryAlias}}" class="profile-alias">{{profileSummaryAlias}}</text>
+        </view>
+        <view wx:if="{{showNameExpanded}}" class="name-editor-header" catchtap="stop">
+          <view class="name-parts-row">
+            <view class="name-part-field surname-part-field">
+              <text class="name-part-label">姓</text>
+              <view class="{{surnameHeaderClass}}">
+                <text class="name-header-display surname-display">{{editSurname}}</text>
+                <input class="{{surnameInputClass}} name-header-input native-name-input" value="{{editSurname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur" data-f="surname" placeholder="" placeholder-class="val-placeholder" adjust-position="{{false}}" catchtap="stop" />
+              </view>
+            </view>
+            <view class="name-part-field firstname-part-field">
+              <text class="name-part-label">名</text>
+              <view class="{{firstnameHeaderClass}}">
+                <text class="name-header-display firstname-display">{{editFirstname}}</text>
+                <input class="{{firstnameInputClass}} name-header-input native-name-input" value="{{editFirstname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur" data-f="firstname" placeholder="" placeholder-class="val-placeholder" adjust-position="{{false}}" catchtap="stop" />
+              </view>
+            </view>
           </view>
         </view>
       </view>
 
       <view class="gender-section" catchtap="onStartEditGender">
-        <text wx:if="{{!editGender}}" class="gender-display-text {{person.gender || 'male'}}">{{person.gender == 'female' ? '女' : '男'}}</text>
-        <radio-group wx:else bindchange="onUpdate" data-f="gender" class="gender-radio-group">
-            <label class="gender-btn male {{person.gender=='male'?'active':''}}"><radio value="male" checked="{{person.gender=='male'}}"/>男</label>
-            <label class="gender-btn female {{person.gender=='female'?'active':''}}"><radio value="female" checked="{{person.gender=='female'}}"/>女</label>
+        <text wx:if="{{showGenderDisplay && !showNameExpanded}}" class="{{genderDisplayClass}}">{{genderLabel}}</text>
+        <radio-group wx:if="{{showGenderEditor || showNameExpanded}}" bindchange="onUpdate" data-f="gender" class="gender-radio-group">
+          <label class="{{maleGenderClass}}"><radio value="male" checked="{{isMale}}"/>男</label>
+          <label class="{{femaleGenderClass}}"><radio value="female" checked="{{isFemale}}"/>女</label>
         </radio-group>
       </view>
     </view>
   </view>
 
-  <!-- Expanded name section: surname / full name + alias / rank / hometown (click name or create to expand) -->
-  <view wx:if="{{nameSectionExpanded || creatingProfile}}" class="name-section-expanded" catchtap="onExitEdit">
-    <!-- 姓 -->
-    <view class="profile-row-inline">
-      <text class="row-label-inline">姓</text>
-      <input class="val-text-inline surname-input {{activeField === 'surname' ? 'is-active' : ''}} {{changedFields.surname ? 'is-changed' : ''}}"
-             value="{{person.surname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur"
-             data-f="surname" placeholder="姓"
-             placeholder-class="val-placeholder" catchtap="stop"
-             focus="{{activeField === 'surname'}}" />
-    </view>
-    <!-- 名 -->
-    <view class="profile-row-inline">
-      <text class="row-label-inline">名</text>
-      <input class="val-text-inline {{activeField === 'firstname' ? 'is-active' : ''}} {{changedFields.firstname ? 'is-changed' : ''}}"
-             value="{{person.firstname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur"
-             data-f="firstname" placeholder="名"
-             placeholder-class="val-placeholder" catchtap="stop"
-             focus="{{activeField === 'firstname'}}" />
-    </view>
-    <!-- 全名: gray if just surname+firstname concat -->
+  <view hidden="{{!showNameExpanded}}" class="name-section-expanded" catchtap="onExitEdit">
     <view class="profile-row-inline">
       <text class="row-label-inline">全名</text>
-      <input class="val-text-inline {{nameManual ? 'is-manual' : ''}} {{!nameManual ? 'is-auto' : ''}} {{activeField === 'name' ? 'is-active' : ''}} {{changedFields.name ? 'is-changed' : ''}}"
-             value="{{person.name}}" bindinput="onUpdateFullName" bindfocus="onFocus" bindblur="onBlur"
-             data-f="name" placeholder="若不同于姓+名"
-             placeholder-class="val-placeholder" catchtap="stop" />
+      <input class="{{fullNameInputClass}}" value="{{fullNameValue}}" bindinput="onUpdateFullName" bindfocus="onFocus" bindblur="onBlur" data-f="name" placeholder="{{fullNamePlaceholder}}" placeholder-class="full-name-placeholder" adjust-position="{{false}}" catchtap="stop" />
+      <text class="row-label-inline rank-inline-label">排行</text>
+      <input class="{{rankInputClass}}" value="{{person.rank}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="rank" placeholder="一" placeholder-class="val-placeholder" adjust-position="{{false}}" />
     </view>
-
-    <!-- Alias / Rank / Hometown -->
     <view class="profile-row-inline">
       <text class="row-label-inline">字号</text>
-      <input class="val-text-inline {{activeField === 'alias' ? 'is-active' : ''}} {{changedFields.alias ? 'is-changed' : ''}}" 
-             value="{{person.alias}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop"
-             data-f="alias" placeholder="{{aliasHint}}" placeholder-class="val-placeholder"/>
-      <view class="rank-section">
-        <text class="row-label-inline">排行</text>
-        <input class="val-text-inline rank-input {{activeField === 'rank' ? 'is-active' : ''}} {{changedFields.rank ? 'is-changed' : ''}}" 
-               value="{{person.rank}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop"
-               data-f="rank" placeholder="一" maxlength="2" placeholder-class="val-placeholder"/>
-      </view>
+      <input class="{{aliasInputClass}}" value="{{person.alias}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="alias" placeholder="{{aliasHint}}" placeholder-class="val-placeholder" adjust-position="{{false}}" />
     </view>
     <view class="profile-row-inline">
       <text class="row-label-inline">籍贯</text>
-      <input class="val-text-inline {{activeField === 'hometown' ? 'is-active' : ''}} {{changedFields.hometown ? 'is-changed' : ''}}" 
-             value="{{person.hometown}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop"
-             data-f="hometown" placeholder="{{hometownHint || '江苏吴县'}}" placeholder-class="val-placeholder"/>
+      <input class="{{hometownInputClass}}" value="{{person.hometown}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="hometown" placeholder="{{hometownPlaceholder}}" placeholder-class="val-placeholder" adjust-position="{{false}}" />
     </view>
   </view>
 
   <scroll-view scroll-y class="drawer-scroll" bindtap="onExitEdit">
-    <!-- Life section: always-visible years + click label to reveal details -->
-    <view class="life-grid">
-      <view class="life-col" catchtap="stop">
-        <view class="life-col-header" bindtap="onToggleLifeSection">
-          <text class="life-col-title clickable">出生</text>
+    <view wx:if="{{lifeSectionExpanded || lifeCompactDisplay || lifeCompactSubDisplay}}" class="life-grid" catchtap="stop">
+      <view class="life-summary-row">
+        <view wx:if="{{lifeSectionCollapsed && (lifeCompactDisplay || lifeCompactSubDisplay)}}" class="life-compact-row" bindtap="onToggleLifeSection">
+          <text wx:if="{{lifeCompactDisplay}}" class="{{ageTextClass}} life-compact-text">{{lifeCompactDisplay}}</text>
+          <text wx:if="{{lifeCompactSubDisplay}}" class="life-compact-subtext">{{lifeCompactSubDisplay}}</text>
         </view>
-        <view wx:if="{{lifeSectionExpanded}}" class="life-year-row">
-            <input class="life-val {{activeField === 'bYear' ? 'is-active' : ''}} {{changedFields.bYear ? 'is-changed' : ''}}" value="{{person.bYear}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bYear" placeholder="公元纪年" placeholder-class="val-placeholder" type="number" />
+        <button wx:if="{{lifeSectionCollapsed && !showPersonalEventDraft && personalEventRows.length === 0}}" class="life-event-add" size="mini" catchtap="onShowPersonalEventDraft">+事件</button>
+
+        <block wx:if="{{lifeSectionExpanded}}">
+          <view class="life-inline-item">
+            <text class="life-inline-label" bindtap="onToggleLifeSection">出生</text>
+            <input class="{{bYearInputClass}} life-year-field" value="{{bYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bYear" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
           </view>
-          <view wx:else class="life-year-row" bindtap="onToggleLifeSection">
-            <text class="life-val-text {{changedFields.bYear ? 'is-changed' : ''}}">{{bYearDisplay || '公元纪年'}}</text>
+
+          <view wx:if="{{!isLivingChecked}}" class="life-inline-item">
+            <text class="life-inline-label" bindtap="onToggleLifeSection">去世</text>
+            <input class="{{dYearInputClass}} life-year-field" value="{{dYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dYear" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
           </view>
-          <view wx:if="{{lifeSectionExpanded}}">
-          <input class="life-val {{activeField === 'bDate' ? 'is-active' : ''}} {{changedFields.bDate ? 'is-changed' : ''}}" value="{{person.bDate}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bDate" placeholder="生辰" placeholder-class="val-placeholder" />
-          <input class="life-val {{activeField === 'bPlace' ? 'is-active' : ''}} {{changedFields.bPlace ? 'is-changed' : ''}}" value="{{person.bPlace}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bPlace" placeholder="地点" placeholder-class="val-placeholder" />
+
+          <view class="life-inline-item age-inline-item">
+            <text class="life-inline-label" bindtap="onToggleLifeSection">{{ageLabel}}</text>
+            <view class="age-year-row">
+              <input class="{{ageInputClass}} {{ageComputedClass}}" value="{{ageValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="age" placeholder="虚岁" placeholder-class="val-placeholder" type="number" maxlength="3" adjust-position="{{false}}" />
+              <text class="age-suffix">岁</text>
+            </view>
+            <text class="age-info-icon" catchtap="onAgeInfoTap">i</text>
           </view>
+          <view class="life-inline-item status-inline-item">
+            <button class="{{lifeStatusToggleClass}}" size="mini" disabled="{{livingToggleDisabled}}" catchtap="onToggleLivingStatus">{{isLivingChecked ? '在世' : '已故'}}</button>
+          </view>
+          <button wx:if="{{!showPersonalEventDraft && personalEventRows.length === 0}}" class="life-event-add" size="mini" catchtap="onShowPersonalEventDraft">+事件</button>
+        </block>
       </view>
-      <view class="life-col" catchtap="stop">
-        <view class="life-col-header" bindtap="onToggleLifeSection">
-          <text class="life-col-title clickable">去世</text>
+
+      <view wx:if="{{lifeSectionExpanded}}" class="life-detail-row">
+        <view class="life-detail-col">
+          <input class="{{bDateInputClass}}" value="{{bDateValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bDate" placeholder="{{bDatePlaceholder}}" placeholder-class="val-placeholder" adjust-position="{{false}}" />
+          <input class="{{bPlaceInputClass}}" value="{{person.bPlace}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bPlace" placeholder="地点" placeholder-class="val-placeholder" adjust-position="{{false}}" />
         </view>
-        <view wx:if="{{lifeSectionExpanded}}" class="life-year-row">
-            <input class="life-val {{activeField === 'dYear' ? 'is-active' : ''}} {{changedFields.dYear ? 'is-changed' : ''}}" value="{{person.dYear}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dYear" placeholder="公元纪年" placeholder-class="val-placeholder" type="number" />
-          </view>
-          <view wx:else class="life-year-row" bindtap="onToggleLifeSection">
-            <text class="life-val-text {{changedFields.dYear ? 'is-changed' : ''}}">{{dYearDisplay || '公元纪年'}}</text>
-          </view>
-          <view wx:if="{{lifeSectionExpanded}}">
-          <input class="life-val {{activeField === 'dDate' ? 'is-active' : ''}} {{changedFields.dDate ? 'is-changed' : ''}}" value="{{person.dDate}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dDate" placeholder="忌日" placeholder-class="val-placeholder" />
-          <input class="life-val {{activeField === 'dPlace' ? 'is-active' : ''}} {{changedFields.dPlace ? 'is-changed' : ''}}" value="{{person.dPlace}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dPlace" placeholder="地点" placeholder-class="val-placeholder" />
-          </view>
+        <view wx:if="{{isLivingChecked}}" class="life-detail-col"></view>
+        <view wx:if="{{!isLivingChecked}}" class="life-detail-col">
+          <input class="{{dDateInputClass}}" value="{{dDateValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dDate" placeholder="{{dDatePlaceholder}}" placeholder-class="val-placeholder" adjust-position="{{false}}" />
+          <input class="{{dPlaceInputClass}}" value="{{person.dPlace}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dPlace" placeholder="地点" placeholder-class="val-placeholder" adjust-position="{{false}}" />
+        </view>
       </view>
     </view>
 
-    <!-- Relations section - hide for new person -->
-    <view wx:if="{{!creatingProfile}}">
-
-    <!-- Paternal Lineage Section (independent full-width section) -->
-    <view wx:if="{{father}}" class="paternal-lineage-section">
-      <!-- Great Grandfather (曾祖) -->
-      <view wx:if="{{paternalAncestors.greatGrandfather}}" class="lineage-bar-row level-3">
-        <text class="lineage-prefix-outside">曾祖</text>
-        <view class="lineage-bar-content">
-          <text class="lineage-bar-name">{{paternalAncestors.greatGrandfather}}</text>
-          <text class="lineage-bar-year">{{paternalAncestors.greatGrandfatherYear || ''}}</text>
+    <view wx:if="{{personalEventRows.length > 0 || showPersonalEventDraft || showPersonalEventEditor}}" class="personal-events-section" catchtap="stop">
+      <view wx:if="{{personalEventRows.length > 0 && !showPersonalEventEditor && !showPersonalEventDraft}}" class="personal-event-summary-row {{changedFields.events ? 'is-unsaved' : ''}}">
+        <view class="personal-event-summary-text">
+          <view wx:for="{{personalEventRows}}" wx:key="id" class="personal-event-chip tone-{{item.tone}} {{item.hidden ? 'is-hidden' : ''}}" catchtap="onTogglePersonalEventVisibility" data-index="{{index}}">
+            <text class="personal-event-chip-name">{{item.name}}</text>
+            <text class="personal-event-chip-year">{{item.yearLabel}}</text>
+          </view>
+          <view class="personal-event-mini-add" catchtap="onShowPersonalEventDraft">+</view>
+          <view class="personal-event-edit-icon" catchtap="onEditPersonalEvents">✎</view>
         </view>
       </view>
-      <!-- Grandfather (祖) -->
-      <view wx:if="{{paternalAncestors.grandfather}}" class="lineage-bar-row level-2">
-        <text class="lineage-prefix-outside">祖</text>
-        <view class="lineage-bar-content">
-          <text class="lineage-bar-name">{{paternalAncestors.grandfather}}</text>
-          <text class="lineage-bar-year">{{paternalAncestors.grandfatherYear || ''}}</text>
+      <block wx:else>
+        <view wx:if="{{showPersonalEventEditor}}" class="personal-event-edit-flow">
+          <view wx:for="{{personalEventRows}}" wx:key="id" class="personal-event-row {{changedFields.events ? 'is-unsaved' : ''}}">
+            <view class="personal-event-edit-chip tone-{{item.tone}} {{item.hidden ? 'is-hidden' : ''}}">
+              <input class="personal-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="name" placeholder="事件名" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
+              <input class="personal-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="yearLabel" placeholder="年份/起止年" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
+            </view>
+            <view class="personal-event-delete" catchtap="onDeletePersonalEvent" data-index="{{index}}">×</view>
+          </view>
         </view>
-      </view>
-      <!-- Father (父) -->
-      <view class="lineage-bar-row level-1">
-        <text class="lineage-prefix-outside">父</text>
-        <view class="lineage-bar-content">
-          <text class="lineage-bar-name">{{paternalAncestors.father}}</text>
-          <text class="lineage-bar-year">{{paternalAncestors.fatherYear || ''}}</text>
+      </block>
+      <view wx:if="{{showPersonalEventDraft}}" class="personal-event-form-row">
+        <view class="personal-event-edit-chip tone-{{personalEventDraftTone}} is-new">
+          <input class="personal-event-edit-input name" style="width:{{personalEventDraftNameWidth}};" value="{{personalEventDraftName}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftName" placeholder="事件名" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
+          <input class="personal-event-edit-input year" style="width:{{personalEventDraftYearWidth}};" value="{{personalEventDraftYear}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftYear" placeholder="年份/起止年" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
         </view>
+        <button class="personal-event-add" size="mini" catchtap="onAddPersonalEvent">确定</button>
+        <view class="personal-event-cancel" catchtap="onCancelPersonalEventDraft">×</view>
       </view>
     </view>
-    <!-- Add Father Button (only when person is a progenitor — no father deducible from ID) -->
-    <button wx:if="{{!father && canAddFather}}" class="add-btn-tiny" style="width: 50%; margin: 0 auto;" bindtap="onAddFather">+ 父</button>
 
-    <!-- Relations Grid -->
-    <view class="rel-view-grid">
-      <!-- Left column: Birth Mother and Spouses -->
-      <view class="rel-view-col">
-        <!-- Birth Mother -->
-        <text class="row-label">生母</text>
-        <picker wx:if="{{motherRange.length > 1}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
-          <view wx:if="{{!person.motherId && !pendingMotherSelected}}" class="picker-box invitation">选生母</view>
-          <view wx:else class="rel-card {{currentMotherGender}} {{pendingMotherSelected ? 'pending-highlight' : ''}}">
-            <view class="name-scroll-container">
-              <text class="rel-name-txt">{{currentMotherName}}</text>
-            </view>
-            <view class="item-right">
-              <text class="rel-year-txt">{{currentMotherBYear}}</text>
-            </view>
-          </view>
-        </picker>
-        <!-- When no mother options, show placeholder text -->
-        <view wx:else class="picker-box disabled">
-          <text class="picker-disabled-text">无可选生母</text>
-        </view>
-
-        <!-- Spouses -->
-        <text class="row-label">配偶</text>
-        <view class="card-list">
-          <view wx:for="{{localSpouses}}" wx:key="id" class="rel-card {{item.gender || 'unknown'}}">
-            <view class="name-scroll-container" bindtap="onJumpToTree" data-id="{{item.id}}">
-              <text class="rel-name-txt scrolling-text">{{item._displayName || '未命名'}}</text>
-            </view>
-            <view class="item-right">
-              <text class="rel-year-txt">{{item.bYear || ''}}</text>
-              <view wx:if="{{localSpouses.length > 1}}" class="reorder-handle" catchtouchstart="startReorder" catchtouchmove="moveReorder" catchtouchend="endReorder" data-type="spouses" data-index="{{index}}">⠿</view>
+    <view wx:if="{{showRelations}}">
+      <view wx:if="{{showPaternalRows}}" class="paternal-lineage-section">
+        <view wx:for="{{localPaternalRows}}" wx:key="id" class="{{item.rowClass}}">
+          <text class="lineage-prefix-outside">{{item.label}}</text>
+          <view class="{{item.contentClass}}" bindtap="onJump" data-id="{{item.id}}">
+            <view class="lineage-label">
+              <text class="lineage-bar-name">{{item._displayName}}</text>
+              <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
+              <text wx:if="{{item.yearText}}" class="rel-year-inline">{{item.yearText}}</text>
             </view>
           </view>
         </view>
-        <button class="add-btn-tiny" bindtap="onAddSpouse">+ 配偶</button>
       </view>
 
-      <!-- Right column: Children -->
-      <view class="rel-view-col">
-        <text class="row-label">子女</text>
-        <view class="card-list">
-          <view wx:for="{{localChildren}}" wx:key="id" class="rel-card {{item.gender || 'unknown'}}">
-            <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
-              <text class="rel-name-txt scrolling-text">{{item.name || (item.surname ? item.surname + '氏' : '未命名')}}</text>
+      <button wx:if="{{showAddFatherBtn}}" class="add-btn-tiny add-father-btn" bindtap="onAddFather">+ 父</button>
+
+      <view class="rel-view-grid">
+        <view class="rel-view-col">
+          <text class="row-label">生母</text>
+          <picker wx:if="{{showMotherPicker}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
+            <view wx:if="{{showMotherInvitation}}" class="picker-box invitation">选生母</view>
+            <view wx:if="{{showMotherPickerCard}}" class="{{motherPickerCardClass}}">
+              <view class="name-scroll-container">
+                <view class="rel-label-scroll">
+                  <text class="rel-name-txt">{{motherPickerName}}</text>
+                  <text wx:if="{{motherPickerRank}}" class="rel-rank-txt"> ({{motherPickerRank}})</text>
+                  <text wx:if="{{motherPickerYear}}" class="rel-year-inline">{{motherPickerYear}}</text>
+                </view>
+              </view>
             </view>
-            <view class="item-right">
-              <text class="rel-year-txt">{{item.bYear || ''}}</text>
-              <view wx:if="{{localChildren.length > 1}}" class="reorder-handle" catchtouchstart="startReorder" catchtouchmove="moveReorder" catchtouchend="endReorder" data-type="children" data-index="{{index}}">⠿</view>
+          </picker>
+
+          <view wx:if="{{showMotherStatic}}" class="{{motherStaticCardClass}}">
+            <view class="name-scroll-container" bindtap="onJump" data-id="{{localMotherId}}">
+              <view class="rel-label-scroll">
+                <text class="rel-name-txt">{{motherStaticName}}</text>
+                <text wx:if="{{motherStaticRank}}" class="rel-rank-txt"> ({{motherStaticRank}})</text>
+                <text wx:if="{{motherStaticYear}}" class="rel-year-inline">{{motherStaticYear}}</text>
+              </view>
             </view>
           </view>
+
+          <view wx:if="{{showMotherEmpty}}" class="picker-box disabled">
+            <text class="picker-disabled-text">无可选生母</text>
+          </view>
+
+          <text class="row-label">配偶</text>
+          <view class="card-list">
+            <view wx:for="{{localSpouses}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
+              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+                <view class="rel-label-scroll scrolling-text">
+                  <text class="rel-name-txt">{{item._displayName}}</text>
+                  <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
+                  <text wx:if="{{item.yearText}}" class="rel-year-inline">{{item.yearText}}</text>
+                </view>
+              </view>
+              <view wx:if="{{item.showReorder}}" class="item-right">
+                <view wx:if="{{item.showReorder}}" class="reorder-grip" catchtouchstart="startRelationDrag" catchtouchmove="moveRelationDrag" catchtouchend="endRelationDrag" catchtouchcancel="endRelationDrag" data-type="spouses" data-index="{{index}}">⠿</view>
+              </view>
+            </view>
+          </view>
+          <button class="add-btn-tiny" bindtap="onAddSpouse">+ 配偶</button>
         </view>
-        <button wx:if="{{person.gender == 'male'}}" class="add-btn-tiny" bindtap="onAddChild">+ 子女</button>
+
+        <view class="rel-view-col">
+          <text class="row-label">子女</text>
+          <view class="card-list">
+            <view wx:for="{{localChildren}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
+              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+                <view class="rel-label-scroll scrolling-text">
+                  <text class="rel-name-txt">{{item._displayName}}</text>
+                  <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
+                  <text wx:if="{{item.yearText}}" class="rel-year-inline">{{item.yearText}}</text>
+                </view>
+              </view>
+              <view wx:if="{{item.showReorder}}" class="item-right">
+                <view wx:if="{{item.showReorder}}" class="reorder-grip" catchtouchstart="startRelationDrag" catchtouchmove="moveRelationDrag" catchtouchend="endRelationDrag" catchtouchcancel="endRelationDrag" data-type="children" data-index="{{index}}">⠿</view>
+              </view>
+            </view>
+          </view>
+          <button wx:if="{{showAddChildBtn}}" class="add-btn-tiny" bindtap="onAddChild">+ 子女</button>
+          <view wx:if="{{showFemaleChildHint}}" class="relation-hint">请从父亲页面添加子女</view>
+        </view>
       </view>
-    </view>
     </view>
 
     <view class="action-footer" catchtap="stop">
-      <!-- bindtap must be a static string; guard logic is inside onSave() -->
-      <button class="save-btn-main {{hasChanges?'active':'disabled'}}" bindtap="onSave">保存</button>
-      <view wx:if="{{canDelete && !creatingProfile}}" class="del-btn-archive" bindtap="onDelete">永久删除成员</view>
+      <button class="{{saveButtonClass}}" bindtap="onSave">保存</button>
+      <view wx:if="{{deleteVisible}}" class="del-btn-archive" bindtap="onDelete">永久删除成员</view>
     </view>
   </scroll-view>
 </view>
