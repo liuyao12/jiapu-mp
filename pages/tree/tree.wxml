@@ -88,16 +88,16 @@
           <view class="tree-content" style="padding-bottom:{{treeContentBottomPadding}}rpx;">
         <view wx:if="{{showTimeline}}" wx:for="{{timelineEventBands}}" wx:key="id" class="timeline-event-band tone-{{item.tone}} {{item.isCurrentYear ? 'current-year-event' : ''}}" style="left:{{(item.x || 0) + 40}}rpx; width:{{item.w || timelineEdgeMarkWidth}}rpx; height:{{maxH + treeContentBottomPadding}}rpx;">
           <view class="timeline-event-edge left" style="left:{{item.edgeInset}}rpx; width:{{item.edgeMarkWidth || timelineEdgeMarkWidth}}rpx;"></view>
-          <view class="timeline-event-edge right" style="right:{{item.edgeInset}}rpx; width:{{item.edgeMarkWidth || timelineEdgeMarkWidth}}rpx;"></view>
+          <view wx:if="{{!item.hideRightEdge}}" class="timeline-event-edge right" style="right:{{item.edgeInset}}rpx; width:{{item.edgeMarkWidth || timelineEdgeMarkWidth}}rpx;"></view>
           <text class="timeline-event-label" style="top:{{treeStyle.eventLabelTop + (item.labelLane || 0) * treeStyle.eventLabelRowGap}}rpx; transform:translateX(-50%) translateX({{item.labelOffsetX || 0}}rpx); color:{{item.labelColor || treeStyle.eventLabelColor}};">{{item.label}}</text>
         </view>
         <view wx:for="{{lines}}" wx:key="index" class="line {{item.type || 'stem'}} {{item.lineage || 'patrilineal'}} {{showTimeline ? 'timeline-line' : ''}}" style="left:{{(item.drawX || 0) + 40}}rpx; top:{{(item.drawY || 0) + treeTopGap}}rpx; width:{{item.drawW || treeStyle.lineWidth}}rpx; height:{{item.drawH || treeStyle.lineWidth}}rpx;"></view>
         <view wx:for="{{nodes}}" wx:key="id" class="node {{item.gender || 'unknown'}} {{item.isSpouse?'spouse':''}} {{showTimeline ? 'timeline-node' : 'standard-node'}}" style="left:{{(item.x || 0) + 40 + (showTimeline ? timelineEdgeInset : 0)}}rpx; top:{{(item.y || 0) + treeTopGap}}rpx; width:{{showTimeline ? item.timelineRenderW : item.w}}rpx; height:{{item.h || 56}}rpx;" bindtap="onNodeTap" data-id="{{item.id}}">
           <view class="node-inner" style="{{item.maskStyle || ''}} background:{{item.gender == 'male' ? treeStyle.maleFill : item.gender == 'female' ? treeStyle.femaleFill : treeStyle.unknownFill}}; border-color:{{item.gender == 'male' ? treeStyle.maleBorder : item.gender == 'female' ? treeStyle.femaleBorder : treeStyle.unknownBorder}};">
             <block wx:if="{{showTimeline}}">
-              <view wx:for="{{item.personalEventMarks}}" wx:for-item="mark" wx:key="id" class="personal-event-mark tone-{{mark.tone}} {{mark.isRange ? 'range' : ''}} {{mark.splitLeftCap ? 'split-left-cap' : ''}} {{mark.splitRightCap ? 'split-right-cap' : ''}}" style="left:{{mark.x}}rpx; width:{{mark.w || 2}}rpx; top:{{mark.top || 2}}rpx; height:{{mark.h || 40}}rpx; bottom:auto;">
-                <view wx:if="{{mark.isRange}}" class="personal-event-cap left"></view>
-                <view wx:if="{{mark.isRange && !mark.hideRightCap}}" class="personal-event-cap right"></view>
+              <view wx:for="{{item.personalEventMarks}}" wx:for-item="mark" wx:key="id" class="personal-event-mark tone-{{mark.tone}} {{mark.isRange ? 'range' : ''}} {{mark.isUnderlay ? 'underlay' : ''}} {{mark.splitLeftCap ? 'split-left-cap' : ''}} {{mark.splitRightCap ? 'split-right-cap' : ''}}" style="left:{{mark.x}}rpx; width:{{mark.w || 2}}rpx; top:{{mark.top || 2}}rpx; height:{{mark.h || 40}}rpx; bottom:auto;">
+                <view wx:if="{{mark.isRange && !mark.isUnderlay}}" class="personal-event-cap left"></view>
+                <view wx:if="{{mark.isRange && !mark.isUnderlay && !mark.hideRightCap}}" class="personal-event-cap right"></view>
               </view>
               <view wx:if="{{item.timelineHasEndEdge}}" class="timeline-node-inline-edge" style="left:{{item.timelineEndEdgeLeft || 0}}rpx; width:{{item.timelineEndEdgeW || timelineEdgeMarkWidth}}rpx; background:{{item.nodeBorderColor}};"></view>
             </block>

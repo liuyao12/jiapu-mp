@@ -96,6 +96,9 @@ Component({
     lifeAutoField: '',
     ageManual: false,
     ageComputedClass: '',
+    bYearDisabled: false,
+    dYearDisabled: false,
+    ageDisabled: false,
     showDeathInline: true,
     isLivingChecked: false,
     isDeceasedChecked: true,
@@ -644,9 +647,9 @@ Component({
         dDateInputClass: cls('life-val', 'dDate'),
         dPlaceInputClass: cls('life-val', 'dPlace'),
         ageInputClass: cls('life-val life-age-input', 'age'),
-        bYearTextClass: changedFields && changedFields.bYear ? 'life-val-text is-changed' : 'life-val-text',
-        dYearTextClass: changedFields && changedFields.dYear ? 'life-val-text is-changed' : 'life-val-text',
-        ageTextClass: changedFields && (changedFields.age || changedFields.bYear || changedFields.dYear) ? 'life-val-text is-changed' : 'life-val-text'
+        bYearTextClass: 'life-val-text' + (changedFields && changedFields.bYear ? ' is-changed' : '') + (lifeAutoField === 'bYear' ? ' is-auto-life' : ''),
+        dYearTextClass: 'life-val-text' + (changedFields && changedFields.dYear ? ' is-changed' : '') + (lifeAutoField === 'dYear' ? ' is-auto-life' : ''),
+        ageTextClass: 'life-val-text' + (changedFields && (changedFields.age || changedFields.bYear || changedFields.dYear) ? ' is-changed' : '') + (lifeAutoField ? ' is-auto-life' : '')
       };
     },
 
@@ -738,6 +741,14 @@ Component({
       return Number.isFinite(n) && n !== 0 ? n : null;
     },
 
+    _lifeAutoDisabledState(lifeAutoField = '') {
+      return {
+        bYearDisabled: lifeAutoField === 'bYear',
+        dYearDisabled: lifeAutoField === 'dYear',
+        ageDisabled: lifeAutoField === 'age'
+      };
+    },
+
     _lifeYearDisplay(value) {
       return value ? String(value) : '\u516c\u5143\u7eaa\u5e74';
     },
@@ -760,10 +771,10 @@ Component({
       const previousAutoField = String(p._lifeAutoField || '');
 
       if (changedField && !changedValue) {
-        if (changedField === 'bYear' || changedField === 'dYear') {
-          p.age = '';
-        } else if (previousAutoField && previousAutoField !== changedField) {
+        if (previousAutoField && previousAutoField !== changedField) {
           p[previousAutoField] = '';
+        } else if (changedField === 'bYear' || changedField === 'dYear') {
+          p.age = '';
         }
         p._lifeAutoField = '';
         return { person: p, autoField: '' };
@@ -774,8 +785,24 @@ Component({
       const a = this._parseLifeNumber(p.age);
       let autoField = '';
 
+      if (changedField && previousAutoField && previousAutoField !== changedField) {
+        p[previousAutoField] = '';
+      }
+
       if (this._normalizeLivingValue(p.isLiving)) {
-        if (changedField === 'age') {
+        if (changedField === '' && previousAutoField === 'age' && b !== null) {
+          const computedAge = this._computeLivingSuiAge(b);
+          if (computedAge) {
+            p.age = computedAge;
+            autoField = 'age';
+          }
+        } else if (changedField === '' && previousAutoField === 'bYear' && a !== null && a > 0) {
+          const derived = this._deriveBYearFromLivingAge(a);
+          if (derived) {
+            p.bYear = derived;
+            autoField = 'bYear';
+          }
+        } else if (changedField === 'age') {
           if (a !== null && a > 0) {
             const derived = this._deriveBYearFromLivingAge(a);
             if (derived) {
@@ -813,7 +840,25 @@ Component({
         return { person: p, autoField: p._lifeAutoField };
       }
 
-      if (changedField === 'age') {
+      if (changedField === '' && previousAutoField === 'age' && b !== null && d !== null && d >= b) {
+        const computedAge = this._computeSuiAge(b, d);
+        if (computedAge) {
+          p.age = computedAge;
+          autoField = 'age';
+        }
+      } else if (changedField === '' && previousAutoField === 'dYear' && b !== null && a !== null && a > 0) {
+        const derived = this._deriveDYearFromAge(b, a);
+        if (derived) {
+          p.dYear = derived;
+          autoField = 'dYear';
+        }
+      } else if (changedField === '' && previousAutoField === 'bYear' && d !== null && a !== null && a > 0) {
+        const derived = this._deriveBYearFromAge(d, a);
+        if (derived) {
+          p.bYear = derived;
+          autoField = 'bYear';
+        }
+      } else if (changedField === 'age') {
         if (a !== null && b !== null && a > 0) {
           const derived = this._deriveDYearFromAge(b, a);
           if (derived) {
@@ -967,6 +1012,7 @@ Component({
         ageManual: !living && isManual,
         ageComputedClass: lifeAutoField === 'age' ? 'is-auto-age' : '',
         lifeAutoField,
+        ...this._lifeAutoDisabledState(lifeAutoField),
         showDeathInline: !living && hasDeathYear,
         isLivingChecked: living,
         isDeceasedChecked: !living,
@@ -1229,6 +1275,7 @@ Component({
           dYearDisplay: this._lifeYearDisplay(lifePerson.dYear),
           lifeCompactDisplay: this._lifeCompactDisplay(lifePerson, ageState),
           lifeCompactSubDisplay: this._lifeCompactSubDisplay(lifePerson, ageState),
+          ...this._lifeAutoDisabledState(ageState.lifeAutoField),
           ...this._fieldClasses(changedFields, this.data.activeField, this.data.nameManual, this.data.fullNameEditing, ageState.lifeAutoField)
         });
       }
@@ -1457,6 +1504,7 @@ Component({
       const field = this._eventField(e);
       const value = e.detail.value;
       if (this._isLifeNumberField(field)) {
+        if (this.data.lifeAutoField === field) return;
         const patch = this._lifeNumberDraftPatch(field, value);
         if (field === 'bYear') {
           patch.bDatePlaceholder = this._dateHintForYear(value) || '生辰';

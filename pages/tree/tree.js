@@ -579,10 +579,10 @@ Page({
     const changedValue = changedField ? String(p[changedField] || '').trim() : '';
 
     if (changedField && !changedValue) {
-      if (changedField === 'bYear' || changedField === 'dYear') {
-        p.age = '';
-      } else if (previousAutoField && previousAutoField !== changedField) {
+      if (previousAutoField && previousAutoField !== changedField) {
         p[previousAutoField] = '';
+      } else if (changedField === 'bYear' || changedField === 'dYear') {
+        p.age = '';
       }
       p._lifeAutoField = '';
       return p;
@@ -593,8 +593,24 @@ Page({
     const a = this._parseLifeNumber(p.age);
     let autoField = '';
 
+    if (changedField && previousAutoField && previousAutoField !== changedField) {
+      p[previousAutoField] = '';
+    }
+
     if (this._normalizeLivingValue(p.isLiving)) {
-      if (changedField === 'age') {
+      if (changedField === '' && previousAutoField === 'age' && b !== null) {
+        const computedAge = this._computeLivingSuiAge(b);
+        if (computedAge) {
+          p.age = computedAge;
+          autoField = 'age';
+        }
+      } else if (changedField === '' && previousAutoField === 'bYear' && a !== null && a > 0) {
+        const derived = this._deriveBYearFromLivingAge(a);
+        if (derived) {
+          p.bYear = derived;
+          autoField = 'bYear';
+        }
+      } else if (changedField === 'age') {
         if (a !== null && a > 0) {
           const derived = this._deriveBYearFromLivingAge(a);
           if (derived) {
@@ -632,7 +648,25 @@ Page({
       return p;
     }
 
-    if (changedField === 'age') {
+    if (changedField === '' && previousAutoField === 'age' && b !== null && d !== null && d >= b) {
+      const computedAge = this._computeSuiAge(b, d);
+      if (computedAge) {
+        p.age = computedAge;
+        autoField = 'age';
+      }
+    } else if (changedField === '' && previousAutoField === 'dYear' && b !== null && a !== null && a > 0) {
+      const derived = this._deriveDYearFromAge(b, a);
+      if (derived) {
+        p.dYear = derived;
+        autoField = 'dYear';
+      }
+    } else if (changedField === '' && previousAutoField === 'bYear' && d !== null && a !== null && a > 0) {
+      const derived = this._deriveBYearFromAge(d, a);
+      if (derived) {
+        p.bYear = derived;
+        autoField = 'bYear';
+      }
+    } else if (changedField === 'age') {
       if (a !== null && b !== null && a > 0) {
         const derived = this._deriveDYearFromAge(b, a);
         if (derived) {
@@ -726,6 +760,8 @@ Page({
     if (!person) return person;
     const computed = this._computeLifeAutoFields(person, '');
     Object.assign(person, computed);
+    const autoField = String(computed._lifeAutoField || '');
+    if (autoField) person[autoField] = '';
     delete person._lifeAutoField;
     return person;
   },
@@ -759,8 +795,9 @@ Page({
           [field]: value,
           _lifeAutoField: previousAutoField
         }, lifeNumberFields.includes(field) ? field : '');
+        const autoField = String(computed._lifeAutoField || '');
         ['bYear', 'dYear', 'age', 'isLiving'].forEach((name) => {
-          const nextValue = computed[name];
+          const nextValue = autoField === name ? '' : computed[name];
           const originalValue = original[name];
           if (String(nextValue ?? '') !== String(originalValue ?? '')) {
             pending[name] = nextValue;
@@ -2988,7 +3025,6 @@ Page({
     delete personData._parentId;
     delete personData._childId;
     delete personData._mainPersonId;
-    delete personData._lifeAutoField;
     delete personData.fatherId;
     delete personData.paternalRootId;
     delete personData.progenitorId_;
@@ -6977,7 +7013,9 @@ Page({
         ? 'rgba(230,81,0,0.14)'
         : (namedTone ? namedTone.edge : edgeFills[toneIndex % edgeFills.length]);
       ctx.fillRect(x + markInset, top, Math.min(markW, w), height);
-      ctx.fillRect(x + Math.max(markInset, w - markW - markInset), top, Math.min(markW, w), height);
+      if (!band.hideRightEdge) {
+        ctx.fillRect(x + Math.max(markInset, w - markW - markInset), top, Math.min(markW, w), height);
+      }
       const label = String(band.label || '');
       const labelOffsetX = Number(band.labelOffsetX || 0);
       const centerX = x + w / 2 + (Number.isFinite(labelOffsetX) ? labelOffsetX : 0);
@@ -7195,20 +7233,20 @@ Page({
   _drawScreenshotPersonalEventMarks(ctx, node, nodeX, nodeY, nodeH) {
     if (!this.data.showTimeline || !node || !Array.isArray(node.personalEventMarks)) return;
     const lineColors = [
-      '#5fa8d3',
-      '#8e8ae8',
-      '#e38a6f'
+      'rgba(95,168,211,0.78)',
+      'rgba(142,138,232,0.78)',
+      'rgba(227,138,111,0.78)'
     ];
     const rangeColors = [
-      '#b9d8ec',
-      '#d0cafa',
-      '#f4c3b4'
+      'rgba(185,216,236,0.72)',
+      'rgba(208,202,250,0.72)',
+      'rgba(244,195,180,0.72)'
     ];
     const namedToneColors = {
-      imperial: { line: '#ffd400', range: '#ffe477' },
-      'crown-prince': { line: '#2ad7c3', range: '#9ff0e6' },
-      empress: { line: '#d99027', range: '#f4c56f' },
-      'noble-consort': { line: '#f3c978', range: '#f9dfad' }
+      imperial: { line: 'rgba(255,212,0,0.78)', range: 'rgba(255,228,119,0.72)' },
+      'crown-prince': { line: 'rgba(42,215,195,0.78)', range: 'rgba(159,240,230,0.72)' },
+      empress: { line: 'rgba(217,144,39,0.78)', range: 'rgba(244,197,111,0.72)' },
+      'noble-consort': { line: 'rgba(243,201,120,0.78)', range: 'rgba(249,223,173,0.72)' }
     };
     node.personalEventMarks.forEach(mark => {
       if (!mark) return;
@@ -7221,7 +7259,10 @@ Page({
       const h = Math.max(1, Number(mark.h || (nodeH - borderW * 2 - 4)));
       const x = nodeX + Number(mark.x || 0);
       const w = Math.max(1, Number(mark.w || 2));
-      if (mark.isRange) {
+      if (mark.isUnderlay) {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x, top, w, h);
+      } else if (mark.isRange) {
         const leftCapW = mark.splitLeftCap ? 1 : 2;
         const rightCapW = mark.splitRightCap ? 1 : 2;
         ctx.fillStyle = rangeColor;

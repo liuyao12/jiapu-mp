@@ -958,30 +958,58 @@ function calculateLayout(db, config) {
   const timelineEventsWithLabelLanes = showTimeline
     ? assignTimelineEventLabelLanes(parsedTimelineEvents, startYear)
     : [];
+  const hasTimelineEventStartingAt = (year, exceptId = '') => timelineEventsWithLabelLanes.some(event => (
+    event
+    && event.id !== exceptId
+    && event.startYear === year
+  ));
+  const shouldHideTimelineEventRightEdge = (event) => !!(
+    event
+    && event.startYear !== event.endYear
+    && hasTimelineEventStartingAt(event.endYear, event.id)
+  );
   const timelineEventEdgeRanges = showTimeline
     ? timelineEventsWithLabelLanes.reduce((ranges, event) => {
       const rect = getTimelineRangeRect(event.startYear, event.endYear, startYear);
       ranges.push({ left: rect.x, right: rect.x + TIMELINE_YEAR_EDGE_W });
       const rightEdgeLeft = rect.x + rect.w - TIMELINE_YEAR_EDGE_W;
-      if (rightEdgeLeft !== rect.x) {
+      if (rightEdgeLeft !== rect.x && !shouldHideTimelineEventRightEdge(event)) {
         ranges.push({ left: rightEdgeLeft, right: rightEdgeLeft + TIMELINE_YEAR_EDGE_W });
       }
       return ranges;
     }, [])
     : [];
 
+  const hasKnownTimelineDate = (p) => !!(
+    String(p && p.bYear || '').trim()
+    || String(p && p.dYear || '').trim()
+    || String(p && p.bDate || '').trim()
+    || String(p && p.dDate || '').trim()
+  );
+
+  const getKnownAge = (p) => {
+    const age = parseYearValue(p && p.age);
+    return age !== null && age > 0 ? age : null;
+  };
+
+  const hasEstimatedBirthOnlyWithAge = (p) => !hasKnownTimelineDate(p) && getKnownAge(p) !== null;
+
   // Timeline lifespan behavior:
   // - Explicitly living people extend to current year with no fade.
+  // - Profiles with no known dates but a known age use an exact age-long box
+  //   from the estimated birth year, with no faded tail.
   // - Missing death year without living status still uses the inferred/faded tail.
   const getTimelineBoxEndYear = (p, rawBirthYear) => {
     if (isLivingPerson(p)) return CURRENT_YEAR;
     const deathYear = parseYearValue(p && p.dYear);
     if (deathYear !== null) return Math.min(deathYear, CURRENT_YEAR);
+    const knownAge = getKnownAge(p);
+    if (hasEstimatedBirthOnlyWithAge(p) && knownAge !== null) return rawBirthYear + knownAge;
     return Math.min(rawBirthYear + 80, CURRENT_YEAR);
   };
 
   const getFadeStartPercent = (p, bYear) => {
-    if (!showTimeline || isLivingPerson(p) || (p && p.dYear)) return null;
+    if (!showTimeline || isLivingPerson(p) || (p && p.dYear) || hasEstimatedBirthOnlyWithAge(p)) return null;
     // No fade if person would be younger than 70
     if (bYear + 70 > CURRENT_YEAR) return null;
     const boxEnd = getTimelineBoxEndYear(p, bYear);
@@ -1066,12 +1094,14 @@ function calculateLayout(db, config) {
     const pointWidth = TIMELINE_YEAR_EDGE_W;
     const drawableStart = 0;
     const drawableEnd = Math.max(pointWidth, nodeWidth + TIMELINE_YEAR_EDGE_W);
-    const lineTop = PERSONAL_EVENT_MARK_GAP;
-    const lineH = Math.max(1, rowH - NODE_BORDER_W * 2 - lineTop * 2);
-    const bandH = Math.max(1, Math.min(lineH, PERSONAL_EVENT_BAND_TEXT_H));
-    const bandTop = Math.max(PERSONAL_EVENT_MARK_GAP, Math.round((rowH - bandH) / 2));
-    const stackedTopH = Math.max(1, Math.floor(bandH / 2));
-    const stackedBottomH = Math.max(1, bandH - stackedTopH);
+    const markTop = NODE_BORDER_W;
+    const markH = Math.max(1, rowH - NODE_BORDER_W * 2);
+    const startsByYear = events.reduce((bucket, event) => {
+      if (event && Number.isFinite(event.startYear)) {
+        bucket[String(event.startYear)] = (bucket[String(event.startYear)] || 0) + 1;
+      }
+      return bucket;
+    }, {});
     const marks = events.map((event, index) => {
       const rawStartX = (event.startYear - birthYear) * PX_PER_YEAR;
       const isRange = event.startYear !== event.endYear;
@@ -1094,101 +1124,36 @@ function calculateLayout(db, config) {
         isRange,
         isStacked: false,
         lane: 0,
-        top: isRange ? bandTop : lineTop,
-        h: isRange ? bandH : lineH,
+        top: markTop,
+        h: markH,
         splitLeftCap: false,
         splitRightCap: false,
         splitPoint: false,
-        hideRightCap: false,
+        hideRightCap: isRange && event.startYear !== event.endYear && !!startsByYear[String(event.endYear)],
         tone: personalEventToneByName[event.name] !== undefined ? personalEventToneByName[event.name] : 0
       };
     }).filter(Boolean);
-    const endpointYears = {};
-    marks.forEach(mark => {
-      endpointYears[String(mark.startYear)] = true;
-      endpointYears[String(mark.endYear)] = true;
-    });
-    const splitAsLeftHalf = (mark) => {
-      if (mark.w <= 1) return false;
-      mark.w = Math.max(1, mark.w - 1);
-      if (mark.isRange) mark.splitRightCap = true;
-      else mark.splitPoint = true;
-      return true;
-    };
-    const splitAsRightHalf = (mark) => {
-      if (mark.w <= 1) return false;
-      mark.x += 1;
-      mark.w = Math.max(1, mark.w - 1);
-      if (mark.isRange) mark.splitLeftCap = true;
-      else mark.splitPoint = true;
-      return true;
-    };
-    Object.keys(endpointYears).forEach(year => {
-      const sharedYear = Number(year);
-      const covering = marks.filter(mark => mark.startYear <= sharedYear && mark.endYear >= sharedYear);
-      if (covering.length !== 2) return;
-      const [a, b] = covering;
-      const aEndpoint = a.startYear === sharedYear || a.endYear === sharedYear;
-      const bEndpoint = b.startYear === sharedYear || b.endYear === sharedYear;
-      const overlapsOnlyAtEndpoint = aEndpoint && bEndpoint && (
-        Math.max(a.startYear, b.startYear) === sharedYear
-        && Math.min(a.endYear, b.endYear) === sharedYear
-      );
-      if (!overlapsOnlyAtEndpoint) return;
-      const preferredSide = (mark) => {
-        if (mark.endYear === sharedYear && mark.startYear !== sharedYear) return 'left';
-        if (mark.startYear === sharedYear && mark.endYear !== sharedYear) return 'right';
-        return 'either';
-      };
-      const aSide = preferredSide(a);
-      const bSide = preferredSide(b);
-      let leftMark = null;
-      let rightMark = null;
-      if (aSide === 'left' && bSide !== 'left') {
-        leftMark = a; rightMark = b;
-      } else if (bSide === 'left' && aSide !== 'left') {
-        leftMark = b; rightMark = a;
-      } else if (aSide === 'right' && bSide !== 'right') {
-        leftMark = b; rightMark = a;
-      } else if (bSide === 'right' && aSide !== 'right') {
-        leftMark = a; rightMark = b;
-      } else if (aSide === 'either' && bSide === 'either') {
-        leftMark = a; rightMark = b;
-      }
-      if (!leftMark || !rightMark) return;
-      splitAsLeftHalf(leftMark);
-      splitAsRightHalf(rightMark);
-    });
-    for (let i = 0; i < marks.length; i += 1) {
-      for (let j = i + 1; j < marks.length; j += 1) {
-        const aEnd = marks[i].x + marks[i].w;
-        const bEnd = marks[j].x + marks[j].w;
-        if (marks[i].isRange && marks[j].isRange && marks[i].x < bEnd && marks[j].x < aEnd) {
-          marks[i].isStacked = true;
-          marks[j].isStacked = true;
-        }
-      }
-    }
-    const laneEnds = [-Infinity, -Infinity];
+    const underlays = [];
     [...marks]
-      .sort((a, b) => a.x - b.x || b.w - a.w)
+      .sort((a, b) => a.x - b.x || (a.x + a.w) - (b.x + b.w))
       .forEach((mark, index) => {
-        if (!mark.isStacked) {
-          mark.lane = 0;
-          mark.top = mark.isRange ? bandTop : lineTop;
-          mark.h = mark.isRange ? bandH : lineH;
-          return;
+        const left = mark.x;
+        const right = mark.x + mark.w;
+        const last = underlays[underlays.length - 1];
+        if (last && left <= last.x + last.w) {
+          last.w = Math.max(last.w, right - last.x);
+        } else {
+          underlays.push({
+            id: `${id}-personal-event-underlay-${index}`,
+            x: left,
+            w: mark.w,
+            top: markTop,
+            h: markH,
+            isUnderlay: true
+          });
         }
-        let lane = 0;
-        if (mark.x >= laneEnds[0]) lane = 0;
-        else if (mark.x >= laneEnds[1]) lane = 1;
-        else lane = (index % 2);
-        laneEnds[lane] = Math.max(laneEnds[lane], mark.x + mark.w);
-        mark.lane = lane;
-        mark.top = bandTop + (lane === 0 ? 0 : stackedTopH);
-        mark.h = lane === 0 ? stackedTopH : stackedBottomH;
       });
-    return marks;
+    return underlays.concat(marks);
   };
 
   const isBirthMotherOf = (motherId, childId) => {
@@ -1545,6 +1510,7 @@ function calculateLayout(db, config) {
         w: rect.w,
         edgeInset: 0,
         edgeMarkWidth: TIMELINE_YEAR_EDGE_W,
+        hideRightEdge: shouldHideTimelineEventRightEdge(event),
         startYear: event.startYear,
         endYear: event.endYear,
         tone: event.tone,
