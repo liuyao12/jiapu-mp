@@ -89,18 +89,18 @@
         <block wx:if="{{lifeSectionExpanded}}">
           <view class="life-inline-item">
             <text class="life-inline-label" bindtap="onToggleLifeSection">出生</text>
-            <input class="{{bYearInputClass}} life-year-field" value="{{bYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bYear" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
+            <input class="{{bYearInputClass}} life-year-field" value="{{bYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="bYear" disabled="{{bYearDisabled}}" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
           </view>
 
           <view wx:if="{{!isLivingChecked}}" class="life-inline-item">
             <text class="life-inline-label" bindtap="onToggleLifeSection">去世</text>
-            <input class="{{dYearInputClass}} life-year-field" value="{{dYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dYear" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
+            <input class="{{dYearInputClass}} life-year-field" value="{{dYearValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="dYear" disabled="{{dYearDisabled}}" placeholder="年份" placeholder-class="val-placeholder" type="number" adjust-position="{{false}}" />
           </view>
 
           <view class="life-inline-item age-inline-item">
             <text class="life-inline-label" bindtap="onToggleLifeSection">{{ageLabel}}</text>
             <view class="age-year-row">
-              <input class="{{ageInputClass}} {{ageComputedClass}}" value="{{ageValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="age" placeholder="虚岁" placeholder-class="val-placeholder" type="number" maxlength="3" adjust-position="{{false}}" />
+              <input class="{{ageInputClass}} {{ageComputedClass}}" value="{{ageValue}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="age" disabled="{{ageDisabled}}" placeholder="虚岁" placeholder-class="val-placeholder" type="number" maxlength="3" adjust-position="{{false}}" />
               <text class="age-suffix">岁</text>
             </view>
             <text class="age-info-icon" catchtap="onAgeInfoTap">i</text>
