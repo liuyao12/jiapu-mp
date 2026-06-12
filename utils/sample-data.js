@@ -1,9 +1,9 @@
 const TANG_IMPERIAL_WORKSPACE_ID = 'sample_tang_imperial';
 const TANG_IMPERIAL_ROOT_ID = 'tan_imp_001-';
-const TANG_IMPERIAL_SAMPLE_VERSION = '19';
+const TANG_IMPERIAL_SAMPLE_VERSION = '20';
 const DUGU_XIN_WORKSPACE_ID = 'sample_dugu_xin';
 const DUGU_XIN_ROOT_ID = 'dug_xin_001-';
-const DUGU_XIN_SAMPLE_VERSION = '16';
+const DUGU_XIN_SAMPLE_VERSION = '17';
 
 const IDS = {
   gaozu: TANG_IMPERIAL_ROOT_ID,
@@ -52,16 +52,16 @@ function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
-function eventWithYears(id, name, years) {
-  return { id, name, years: String(years || '').trim() };
+function eventWithYear(id, name, year) {
+  return { id, name, year: String(year || '').trim() };
 }
 
 function reignEvent(id, years) {
-  return eventWithYears(id, '皇帝', years);
+  return eventWithYear(id, '皇帝', years);
 }
 
 function crownPrinceEvent(id, years) {
-  return eventWithYears(id, '太子', years);
+  return eventWithYear(id, '太子', years);
 }
 
 function personInWorkspace(id, workspaceId, data) {
@@ -513,7 +513,7 @@ const people = {
     dYear: '705',
     spouses: [IDS.gaozong],
     events: [
-      eventWithYears('tang_empress_wuzetian', '皇后', '655-683'),
+      eventWithYear('tang_empress_wuzetian', '皇后', '655-683'),
       reignEvent('tang_emperor_wuzetian', '690-705')
     ]
   }),
@@ -525,7 +525,7 @@ const people = {
     bYear: '601',
     dYear: '636',
     spouses: [IDS.taizong],
-    events: [eventWithYears('tang_empress_zhangsun', '皇后', '626-636')]
+    events: [eventWithYear('tang_empress_zhangsun', '皇后', '626-636')]
   }),
   [IDS.empressWei]: person(IDS.empressWei, {
     name: '(唐)皇后 韦氏',
@@ -534,7 +534,7 @@ const people = {
     gender: 'female',
     dYear: '710',
     spouses: [IDS.zhongzong],
-    events: [eventWithYears('tang_empress_wei', '皇后', '684, 705-710')]
+    events: [eventWithYear('tang_empress_wei', '皇后', '684, 705-710')]
   }),
   [IDS.yangGuifei]: person(IDS.yangGuifei, {
     name: '(唐)贵妃 杨玉环',
@@ -545,7 +545,7 @@ const people = {
     bYear: '719',
     dYear: '756',
     spouses: [IDS.xuanzong],
-    events: [eventWithYears('tang_guifei_yang_yuhuan', '贵妃', '745-756')]
+    events: [eventWithYear('tang_guifei_yang_yuhuan', '贵妃', '745-756')]
   }),
   [IDS.empressZhang]: person(IDS.empressZhang, {
     name: '(唐)皇后 张氏',
@@ -554,7 +554,7 @@ const people = {
     gender: 'female',
     dYear: '762',
     spouses: [IDS.suzong],
-    events: [eventWithYears('tang_empress_zhang', '皇后', '758-762')]
+    events: [eventWithYear('tang_empress_zhang', '皇后', '758-762')]
   })
 };
 
@@ -562,49 +562,49 @@ const timelineEvents = [
   {
     id: 'evt_sui_dynasty',
     name: '隋朝',
-    years: '581-618',
+    year: '581-618',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_shenlong',
     name: '神龙革命',
-    years: '705',
+    year: '705',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_anshi',
     name: '安史之乱',
-    years: '755-763',
+    year: '755-763',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_buddha_relic',
     name: '迎佛骨',
-    years: '819',
+    year: '819',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_ganlu',
     name: '甘露之变',
-    years: '835',
+    year: '835',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_wuzong_buddhism',
     name: '武宗灭佛',
-    years: '842-845',
+    year: '842-845',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_tang_huang_chao',
     name: '黄巢起义',
-    years: '875-884',
+    year: '875-884',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   },
   {
     id: 'evt_later_liang',
     name: '后梁',
-    years: '907-923',
+    year: '907-923',
     workspaceId: TANG_IMPERIAL_WORKSPACE_ID
   }
 ];
@@ -648,7 +648,7 @@ const duguPeople = {
     bYear: '504',
     dYear: '557',
     children: [DUGU_IDS.duguLuo, DUGU_IDS.mingjing, DUGU_IDS.yuanzhen, DUGU_IDS.jialuo],
-    events: [eventWithYears('dugu_pillar_general', '八柱国', '550-557')]
+    events: [eventWithYear('dugu_pillar_general', '八柱国', '550-557')]
   }),
   [DUGU_IDS.duguLuo]: duguPerson(DUGU_IDS.duguLuo, {
     name: '独孤罗',
@@ -886,19 +886,19 @@ const duguTimelineEvents = [
   {
     id: 'evt_dugu_western_wei',
     name: '西魏',
-    years: '535-557',
+    year: '535-557',
     workspaceId: DUGU_XIN_WORKSPACE_ID
   },
   {
     id: 'evt_dugu_northern_zhou',
     name: '北周',
-    years: '557-581',
+    year: '557-581',
     workspaceId: DUGU_XIN_WORKSPACE_ID
   },
   {
     id: 'evt_dugu_sui',
     name: '隋朝',
-    years: '581-618',
+    year: '581-618',
     workspaceId: DUGU_XIN_WORKSPACE_ID
   }
 ];

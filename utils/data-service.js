@@ -83,10 +83,10 @@ function formatYearRanges(ranges) {
 }
 
 function cleanYearRanges(source) {
-  const storedRanges = cleanYearRangeListText(source && (source.years || source.yearLabel));
+  const storedRanges = cleanYearRangeListText(source && (source.year || source.yearLabel));
   if (storedRanges && storedRanges.length) return storedRanges;
 
-  const legacyRanges = cleanYearRangeListText(source && (source.year || source.date));
+  const legacyRanges = cleanYearRangeListText(source && (source.years || source.date));
   if (legacyRanges && legacyRanges.length) return legacyRanges;
 
   const singleRange = cleanYearRange(source);
@@ -94,7 +94,7 @@ function cleanYearRanges(source) {
 }
 
 function cleanYearRange(source) {
-  const inlineRange = cleanYearRangeText(source && (source.yearLabel || source.years || source.year || source.date));
+  const inlineRange = cleanYearRangeText(source && (source.year || source.yearLabel || source.years || source.date));
   const startYear = cleanYear(source && (source.startYear || source.start)) || (inlineRange && inlineRange.startYear);
   if (!startYear) return null;
   const endYear = cleanYear(source && (source.endYear || source.end || source.to)) || (inlineRange && inlineRange.endYear) || startYear;
@@ -120,7 +120,7 @@ function cleanPersonalEventForSchema(source, index) {
   const cleaned = {
     id: cleanText(source.id) || `personal_event_${index}`,
     name,
-    years: formatYearRanges(ranges)
+    year: formatYearRanges(ranges)
   };
   if (source.hidden === true || source.hidden === 'true' || source.visible === false || source.visible === 'false') {
     cleaned.hidden = true;
@@ -206,7 +206,7 @@ function cleanTimelineEventForSchema(source, index) {
   const cleaned = {
     id: cleanText(source.id) || `event_${index}`,
     name,
-    years: formatYearRanges(ranges)
+    year: formatYearRanges(ranges)
   };
   if (source.hidden === true || source.hidden === 'true' || source.visible === false || source.visible === 'false') {
     cleaned.hidden = true;

@@ -340,7 +340,7 @@ Component({
           const name = String(event.name || event.title || event.label || '').trim();
           const ranges = this._personalEventYearRangesFromEvent(event);
           const parsed = ranges && ranges.length ? ranges[0] : null;
-          const rawYearLabel = String(event.yearLabel || event.years || event.year || event.startYear || event.date || '').trim();
+          const rawYearLabel = String(event.yearLabel || event.year || event.years || event.startYear || event.date || '').trim();
           if (!name && (!ranges || !ranges.length)) return null;
           const startYear = parsed ? parsed.startYear : '';
           const finalEndYear = parsed ? parsed.endYear : '';
@@ -348,10 +348,9 @@ Component({
           return {
             id: event.id || `personal_event_${index}`,
             name,
-            year: startYear,
+            year: yearLabel,
             startYear,
             endYear: finalEndYear,
-            years: yearLabel,
             yearLabel,
             ...this._personalEventInputWidths(name, yearLabel),
             tone: Object.prototype.hasOwnProperty.call(toneMap, name) ? toneMap[name] : 0,
@@ -405,7 +404,7 @@ Component({
     },
 
     _personalEventYearRangeFromEvent(event = {}) {
-      const inlineYears = this._parsePersonalEventYears(event.yearLabel || event.years || event.year || event.date || '');
+      const inlineYears = this._parsePersonalEventYears(event.yearLabel || event.year || event.years || event.date || '');
       const startYears = this._parsePersonalEventYears(event.startYear || event.start || '');
       const endYears = this._parsePersonalEventYears(event.endYear || event.end || event.to || '');
       const startYear = (startYears && startYears.startYear) || (inlineYears && inlineYears.startYear) || '';
@@ -475,7 +474,7 @@ Component({
     },
 
     _personalEventYearRangesFromEvent(event = {}) {
-      const inlineRanges = this._parsePersonalEventYearRanges(event.yearLabel || event.years || event.date || '');
+      const inlineRanges = this._parsePersonalEventYearRanges(event.yearLabel || event.year || event.years || event.date || '');
       if (inlineRanges && inlineRanges.length) return inlineRanges;
       const yearRanges = this._parsePersonalEventYearRanges(event.year || '');
       if (yearRanges && yearRanges.length) return yearRanges;
@@ -581,7 +580,7 @@ Component({
           const event = {
             id,
             name,
-            years: yearLabel
+            year: yearLabel
           };
           if (row.hidden) event.hidden = true;
           return event;
@@ -1615,7 +1614,7 @@ Component({
         {
           id: this._makePersonalEventId(this.data.personalEventRows || []),
           name,
-          years: yearLabel,
+          year: yearLabel,
           yearLabel
         }
       ];
