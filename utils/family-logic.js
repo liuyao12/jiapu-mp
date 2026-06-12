@@ -251,6 +251,64 @@ const PRE_TANG_HOMETOWN_PREFIXES = Array.from(new Set([
   "梓潼"
 ])).sort((a, b) => b.length - a.length);
 
+
+const POST_TANG_ADMIN_MARKERS = '省市府州郡国國路道厅廳军軍监監';
+
+function stripCountySuffixRest(raw) {
+  const countyIndex = Math.max(raw.lastIndexOf('县'), raw.lastIndexOf('縣'));
+  if (countyIndex < 0) return '';
+  const beforeCounty = raw.slice(0, countyIndex);
+  let markerIndex = -1;
+  for (let i = beforeCounty.length - 1; i >= 0; i -= 1) {
+    if (POST_TANG_ADMIN_MARKERS.includes(beforeCounty[i])) {
+      markerIndex = i;
+      break;
+    }
+  }
+  let start = markerIndex >= 0 ? markerIndex + 1 : 0;
+  if (start === 0) {
+    for (let prefix of HOMETOWN_PREFIXES) {
+      if (raw.startsWith(prefix) && raw.length > prefix.length) {
+        start = prefix.length;
+        break;
+      }
+    }
+  }
+  const county = raw.slice(start, countyIndex + 1).replace(/^(省|市|行省|布政使司)/, '');
+  return /^[\u4e00-\u9fff]{1,6}(县|縣)$/.test(county) ? county : '';
+}
+
+function getHistoricalCommanderyFromAnywhere(raw, options = {}) {
+  const allowLongRest = !!options.allowLongRest;
+  let best = '';
+  let bestIndex = Infinity;
+  for (let prefix of PRE_TANG_HOMETOWN_PREFIXES) {
+    const index = raw.indexOf(prefix);
+    if (index < 0) continue;
+    const rest = raw.slice(index + prefix.length);
+    if (hasModernHometownMarker(rest)) continue;
+    const valid = !rest
+      || /^(郡|国|國)/.test(rest)
+      || /^[\u4e00-\u9fff]{1,4}(县|縣)?$/.test(rest)
+      || allowLongRest;
+    if (!valid) continue;
+    if (index < bestIndex || (index === bestIndex && prefix.length > best.length)) {
+      best = prefix;
+      bestIndex = index;
+    }
+  }
+  return best;
+}
+
+function stripLeadingModernJurisdiction(raw) {
+  for (let prefix of HOMETOWN_PREFIXES) {
+    if (!raw.startsWith(prefix)) continue;
+    const rest = raw.slice(prefix.length).replace(/^(省|市|行省|布政使司|自治区|自治區|特别行政区|特別行政區)/, '');
+    return rest || prefix;
+  }
+  return raw;
+}
+
 function parseFirstYear(value) {
   const match = String(value || '').match(/-?\d{1,4}/);
   if (!match) return null;
@@ -274,11 +332,7 @@ function collectPersonYears(person) {
   (Array.isArray(person.events) ? person.events : []).forEach(event => {
     if (!event) return;
     [
-      event.years,
-      event.year,
-      event.date,
-      event.startYear,
-      event.endYear
+      event.year
     ].forEach(value => {
       const year = parseFirstYear(value);
       if (year !== null) years.push(year);
