@@ -273,13 +273,27 @@ text, view, button, input { font-weight: normal !important; }
 }
 .screenshot-preview-panel {
   width: 100%;
-  max-height: 96vh;
+  max-height: 92vh;
   background: #fff;
-  border-radius: 16rpx 16rpx 0 0;
-  padding: 18rpx 24rpx 28rpx;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 8rpx 24rpx 28rpx;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  transition: transform 0.16s ease-out;
+}
+.screenshot-preview-drag-handle {
+  height: 42rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.screenshot-preview-handle-bar {
+  width: 84rpx;
+  height: 8rpx;
+  border-radius: 999rpx;
+  background: #d7dce2;
 }
 .screenshot-preview-header {
   height: 58rpx;
@@ -557,45 +571,53 @@ text, view, button, input { font-weight: normal !important; }
 
 /* ── Nodes ── */
 .node { position: absolute; top: 0; left: 0; display: flex; align-items: stretch; z-index: 10; box-sizing: border-box; overflow: visible; min-height: 0; padding: 0 !important; margin: 0 !important; }
-.node-inner { position: relative; display: flex; align-items: center; background: #fff; border: 2rpx solid rgba(0,0,0,0.12); border-radius: 0; padding: 0 14rpx 0 0; width: 100%; height: 100%; box-sizing: border-box; line-height: 1.2; min-height: 0; overflow: visible; box-shadow: none; z-index: 2; }
+.node-inner { position: relative; display: flex; align-items: center; background: #fff; border: 0 solid transparent; border-radius: 0; padding: 0 14rpx 0 0; width: 100%; height: 100%; box-sizing: border-box; line-height: 1.2; min-height: 0; overflow: visible; box-shadow: none; z-index: 2; }
 .standard-node .node-inner { height: calc(100% + 1rpx); }
 .timeline-node .node-inner { border-right-width: 0; }
 .timeline-node-year-edge { position: absolute; z-index: 2; pointer-events: none; }
-.timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 2; pointer-events: none; }
+.timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 15; pointer-events: none; }
+/* Node borders are drawn by these overlays, not by .node-inner.
+   Keeping .node-inner borderless makes overlay edges sit on the true outer box, matching screenshot canvas rendering. */
+.node-border-edge { position: absolute; pointer-events: none; z-index: 15; }
+.node-border-edge.top { left: 0; right: 0; top: 0; height: 2rpx; }
+.node-border-edge.bottom { left: 0; right: 0; bottom: 0; height: 2rpx; }
+.node-border-edge.left { top: 0; bottom: 0; left: 0; width: 2rpx; }
+.node-border-edge.right { top: 0; bottom: 0; right: 0; width: 2rpx; }
 .node-seam { display: none; }
 .male   .node-inner { background: #bbdefb !important; }
 .female .node-inner { background: #fce4ec !important; }
 .unknown .node-inner { background: #dcedc8 !important; }
-.personal-event-mark { position: absolute; top: 2rpx; bottom: 2rpx; width: 2rpx; border-radius: 1rpx; background: #5fa8d3; z-index: 1; pointer-events: none; box-sizing: border-box; overflow: hidden; }
-.personal-event-mark.tone-0 { background: #5fa8d3; }
-.personal-event-mark.tone-1 { background: #8e8ae8; }
-.personal-event-mark.tone-2 { background: #e38a6f; }
-.personal-event-mark.tone-imperial { background: #ffd400; }
-.personal-event-mark.tone-crown-prince { background: #2ad7c3; }
-.personal-event-mark.tone-empress { background: #d99027; }
-.personal-event-mark.tone-noble-consort { background: #f3c978; }
-.personal-event-mark.range { background: #b9d8ec; border-radius: 2rpx; opacity: 1; }
+.personal-event-mark { position: absolute; top: 2rpx; bottom: 2rpx; width: 2rpx; border-radius: 1rpx; background: rgba(95,168,211,0.78); z-index: 1; pointer-events: none; box-sizing: border-box; overflow: hidden; }
+.personal-event-mark.underlay { background: #fff !important; border-radius: 0; z-index: 0; }
+.personal-event-mark.tone-0 { background: rgba(95,168,211,0.78); }
+.personal-event-mark.tone-1 { background: rgba(142,138,232,0.78); }
+.personal-event-mark.tone-2 { background: rgba(227,138,111,0.78); }
+.personal-event-mark.tone-imperial { background: rgba(255,212,0,0.78); }
+.personal-event-mark.tone-crown-prince { background: rgba(42,215,195,0.78); }
+.personal-event-mark.tone-empress { background: rgba(217,144,39,0.78); }
+.personal-event-mark.tone-noble-consort { background: rgba(243,201,120,0.78); }
+.personal-event-mark.range { background: rgba(185,216,236,0.72); border-radius: 2rpx; opacity: 1; }
 .personal-event-mark.range.split-left-cap { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .personal-event-mark.range.split-right-cap { border-top-right-radius: 0; border-bottom-right-radius: 0; }
-.personal-event-mark.range.tone-0 { background: #b9d8ec; }
-.personal-event-mark.range.tone-1 { background: #d0cafa; }
-.personal-event-mark.range.tone-2 { background: #f4c3b4; }
-.personal-event-mark.range.tone-imperial { background: #ffe477; }
-.personal-event-mark.range.tone-crown-prince { background: #9ff0e6; }
-.personal-event-mark.range.tone-empress { background: #f4c56f; }
-.personal-event-mark.range.tone-noble-consort { background: #f9dfad; }
-.personal-event-cap { position: absolute; top: 0; bottom: 0; width: 2rpx; background: #5fa8d3; pointer-events: none; }
+.personal-event-mark.range.tone-0 { background: rgba(185,216,236,0.72); }
+.personal-event-mark.range.tone-1 { background: rgba(208,202,250,0.72); }
+.personal-event-mark.range.tone-2 { background: rgba(244,195,180,0.72); }
+.personal-event-mark.range.tone-imperial { background: rgba(255,228,119,0.72); }
+.personal-event-mark.range.tone-crown-prince { background: rgba(159,240,230,0.72); }
+.personal-event-mark.range.tone-empress { background: rgba(244,197,111,0.72); }
+.personal-event-mark.range.tone-noble-consort { background: rgba(249,223,173,0.72); }
+.personal-event-cap { position: absolute; top: 0; bottom: 0; width: 2rpx; background: rgba(95,168,211,0.78); pointer-events: none; }
 .personal-event-cap.left { left: 0; }
 .personal-event-cap.right { right: 0; }
 .personal-event-mark.split-left-cap .personal-event-cap.left { width: 1rpx; }
 .personal-event-mark.split-right-cap .personal-event-cap.right { width: 1rpx; }
-.personal-event-mark.tone-0 .personal-event-cap { background: #5fa8d3; }
-.personal-event-mark.tone-1 .personal-event-cap { background: #8e8ae8; }
-.personal-event-mark.tone-2 .personal-event-cap { background: #e38a6f; }
-.personal-event-mark.tone-imperial .personal-event-cap { background: #ffd400; }
-.personal-event-mark.tone-crown-prince .personal-event-cap { background: #2ad7c3; }
-.personal-event-mark.tone-empress .personal-event-cap { background: #d99027; }
-.personal-event-mark.tone-noble-consort .personal-event-cap { background: #f3c978; }
+.personal-event-mark.tone-0 .personal-event-cap { background: rgba(95,168,211,0.78); }
+.personal-event-mark.tone-1 .personal-event-cap { background: rgba(142,138,232,0.78); }
+.personal-event-mark.tone-2 .personal-event-cap { background: rgba(227,138,111,0.78); }
+.personal-event-mark.tone-imperial .personal-event-cap { background: rgba(255,212,0,0.78); }
+.personal-event-mark.tone-crown-prince .personal-event-cap { background: rgba(42,215,195,0.78); }
+.personal-event-mark.tone-empress .personal-event-cap { background: rgba(217,144,39,0.78); }
+.personal-event-mark.tone-noble-consort .personal-event-cap { background: rgba(243,201,120,0.78); }
 .p-label { position: relative; z-index: 20; display: flex; align-items: baseline; margin-left: 0; margin-right: 12rpx; white-space: nowrap; min-width: 0; flex: 0 0 auto; }
 .p-hometown { font-size: 28rpx; color: #05070a; white-space: nowrap; font-family: "SimSun", "Songti SC", "STSong", serif; line-height: 1.2; flex: 0 0 auto; }
 .p-name { font-size: 28rpx; color: #05070a; white-space: nowrap; font-family: "SimSun", serif; line-height: 1.2; flex: 0 0 auto; }
