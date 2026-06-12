@@ -332,11 +332,7 @@ function collectPersonYears(person) {
   (Array.isArray(person.events) ? person.events : []).forEach(event => {
     if (!event) return;
     [
-      event.years,
-      event.year,
-      event.date,
-      event.startYear,
-      event.endYear
+      event.year
     ].forEach(value => {
       const year = parseFirstYear(value);
       if (year !== null) years.push(year);
@@ -562,18 +558,8 @@ function parseYearRangeListText(text) {
 
 function parseEventYearRanges(event) {
   if (!event || typeof event !== 'object') return null;
-  const inlineRanges = parseYearRangeListText(event.years || event.yearLabel || event.date || '');
-  if (inlineRanges && inlineRanges.length) return inlineRanges;
-  const yearRanges = parseYearRangeListText(event.year || '');
-  if (yearRanges && yearRanges.length) return yearRanges;
-  const start = parseYearValue(event.startYear || event.start);
-  const rawEnd = parseYearValue(event.endYear || event.end || event.to);
-  const end = rawEnd ?? start;
-  if (start === null || end === null || !Number.isFinite(start) || !Number.isFinite(end)) return null;
-  return [{
-    startYear: Math.min(start, end),
-    endYear: Math.max(start, end)
-  }];
+  const inlineRanges = parseYearRangeListText(event.year || '');
+  return inlineRanges && inlineRanges.length ? inlineRanges : null;
 }
 
 function parsePersonalEventYearRange(event) {

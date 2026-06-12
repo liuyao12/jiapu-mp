@@ -83,28 +83,7 @@ function formatYearRanges(ranges) {
 }
 
 function cleanYearRanges(source) {
-  const storedRanges = cleanYearRangeListText(source && (source.year || source.yearLabel));
-  if (storedRanges && storedRanges.length) return storedRanges;
-
-  const legacyRanges = cleanYearRangeListText(source && (source.years || source.date));
-  if (legacyRanges && legacyRanges.length) return legacyRanges;
-
-  const singleRange = cleanYearRange(source);
-  return singleRange ? [singleRange] : null;
-}
-
-function cleanYearRange(source) {
-  const inlineRange = cleanYearRangeText(source && (source.year || source.yearLabel || source.years || source.date));
-  const startYear = cleanYear(source && (source.startYear || source.start)) || (inlineRange && inlineRange.startYear);
-  if (!startYear) return null;
-  const endYear = cleanYear(source && (source.endYear || source.end || source.to)) || (inlineRange && inlineRange.endYear) || startYear;
-  const startNum = parseInt(startYear, 10);
-  const endNum = parseInt(endYear, 10);
-  if (!Number.isFinite(startNum) || !Number.isFinite(endNum)) return null;
-  return {
-    startYear: String(Math.min(startNum, endNum)),
-    endYear: String(Math.max(startNum, endNum))
-  };
+  return cleanYearRangeListText(source && source.year);
 }
 
 function cleanGender(value) {

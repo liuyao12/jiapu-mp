@@ -340,7 +340,7 @@ Component({
           const name = String(event.name || event.title || event.label || '').trim();
           const ranges = this._personalEventYearRangesFromEvent(event);
           const parsed = ranges && ranges.length ? ranges[0] : null;
-          const rawYearLabel = String(event.yearLabel || event.year || event.years || event.startYear || event.date || '').trim();
+          const rawYearLabel = String(event.yearLabel || event.year || '').trim();
           if (!name && (!ranges || !ranges.length)) return null;
           const startYear = parsed ? parsed.startYear : '';
           const finalEndYear = parsed ? parsed.endYear : '';
@@ -404,11 +404,9 @@ Component({
     },
 
     _personalEventYearRangeFromEvent(event = {}) {
-      const inlineYears = this._parsePersonalEventYears(event.yearLabel || event.year || event.years || event.date || '');
-      const startYears = this._parsePersonalEventYears(event.startYear || event.start || '');
-      const endYears = this._parsePersonalEventYears(event.endYear || event.end || event.to || '');
-      const startYear = (startYears && startYears.startYear) || (inlineYears && inlineYears.startYear) || '';
-      const endYear = (endYears && endYears.endYear) || (startYears && startYears.endYear) || (inlineYears && inlineYears.endYear) || startYear;
+      const inlineYears = this._parsePersonalEventYears(event.yearLabel || event.year || '');
+      const startYear = (inlineYears && inlineYears.startYear) || '';
+      const endYear = (inlineYears && inlineYears.endYear) || startYear;
       if (!startYear) return null;
       const start = parseInt(startYear, 10);
       const end = parseInt(endYear, 10);
@@ -434,10 +432,7 @@ Component({
     },
 
     _formatPersonalEventYears(event) {
-      const start = String(event && (event.startYear || event.year) || '').trim();
-      const end = String(event && (event.endYear || event.startYear || event.year) || '').trim();
-      if (!start) return '';
-      return end && end !== start ? `${start}-${end}` : start;
+      return String(event && event.year || '').trim();
     },
 
     _parsePersonalEventYearRange(text) {
@@ -474,22 +469,7 @@ Component({
     },
 
     _personalEventYearRangesFromEvent(event = {}) {
-      const inlineRanges = this._parsePersonalEventYearRanges(event.yearLabel || event.year || event.years || event.date || '');
-      if (inlineRanges && inlineRanges.length) return inlineRanges;
-      const yearRanges = this._parsePersonalEventYearRanges(event.year || '');
-      if (yearRanges && yearRanges.length) return yearRanges;
-      const startYears = this._parsePersonalEventYears(event.startYear || event.start || '');
-      const endYears = this._parsePersonalEventYears(event.endYear || event.end || event.to || '');
-      const startYear = startYears && startYears.startYear;
-      const endYear = (endYears && endYears.endYear) || (startYears && startYears.endYear) || startYear;
-      if (!startYear) return null;
-      const start = parseInt(startYear, 10);
-      const end = parseInt(endYear, 10);
-      if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-      return [{
-        startYear: String(Math.min(start, end)),
-        endYear: String(Math.max(start, end))
-      }];
+      return this._parsePersonalEventYearRanges(event.yearLabel || event.year || '');
     },
 
     _personalEventYearRangeFromEvent(event = {}) {
@@ -514,10 +494,7 @@ Component({
       if (Array.isArray(ranges) && ranges.length) return this._formatPersonalEventYearRanges(ranges);
       const parsedRanges = this._personalEventYearRangesFromEvent(event || {});
       if (parsedRanges && parsedRanges.length) return this._formatPersonalEventYearRanges(parsedRanges);
-      const start = String(event && (event.startYear || event.year) || '').trim();
-      const end = String(event && (event.endYear || event.startYear || event.year) || '').trim();
-      if (!start) return '';
-      return end && end !== start ? `${start}-${end}` : start;
+      return String(event && event.year || '').trim();
     },
 
     _personalEventTextWidth(text, options = {}) {

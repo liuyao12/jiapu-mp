@@ -1750,7 +1750,7 @@ Page({
           .map(event => [
             event && event.id || '',
             event && event.name || '',
-            event && (event.year || event.years) || '',
+            event && event.year || '',
             event && event.hidden ? 'hidden' : ''
           ].join(','))
           .sort()
@@ -5038,11 +5038,8 @@ Page({
       const name = String(normalized.name || normalized.title || normalized.label || '').trim();
       if (!name || name === '\u4e49\u548c\u56e2' || name === '\u5e9a\u5b50 1900') normalized.name = def.key === 'boxer' ? def.name : normalized.name;
       if (def.key === 'xinhai' && name === '\u8f9b\u4ea5 1911') normalized.name = def.name;
-      if (def.key === 'japanese-invasion' && String(normalized.endYear) === '1945' && previousDefaultVersion < 2) {
-        normalized.startYear = String(normalized.startYear) === '1931' ? '1937' : String(normalized.startYear || '1937');
-      }
       if (!normalized.name) normalized.name = def.name;
-      if (!normalized.year && !normalized.years && !normalized.startYear) normalized.year = def.year;
+      if (!normalized.year) normalized.year = def.year;
     }
     normalized.name = String(normalized.name || normalized.title || normalized.label || '').trim();
     const ranges = this._timelineEventYearRangesFromEvent(normalized);
@@ -5169,10 +5166,7 @@ Page({
   },
 
   _formatTimelineEventYears(event) {
-    const start = String(event && event.startYear || '').trim();
-    const end = String(event && event.endYear || '').trim();
-    if (!start) return '';
-    return end && end !== start ? `${start}-${end}` : start;
+    return String(event && event.year || '').trim();
   },
 
   _parseTimelineEventYearRange(text) {
@@ -5209,20 +5203,7 @@ Page({
   },
 
   _timelineEventYearRangesFromEvent(event = {}) {
-    const inlineRanges = this._parseTimelineEventYearRanges(event.yearLabel || event.year || event.years || event.date || '');
-    if (inlineRanges && inlineRanges.length) return inlineRanges;
-    const startYears = this._parseTimelineEventYears(event.startYear || event.start || '');
-    const endYears = this._parseTimelineEventYears(event.endYear || event.end || event.to || '');
-    const startYear = startYears && startYears.startYear;
-    const endYear = (endYears && endYears.endYear) || (startYears && startYears.endYear) || startYear;
-    if (!startYear) return null;
-    const start = parseInt(startYear, 10);
-    const end = parseInt(endYear, 10);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-    return [{
-      startYear: String(Math.min(start, end)),
-      endYear: String(Math.max(start, end))
-    }];
+    return this._parseTimelineEventYearRanges(event.yearLabel || event.year || '');
   },
 
   _timelineEventYearRangeFromEvent(event = {}) {
@@ -5245,10 +5226,7 @@ Page({
   _formatTimelineEventYears(event) {
     const parsedRanges = this._timelineEventYearRangesFromEvent(event || {});
     if (parsedRanges && parsedRanges.length) return this._formatTimelineEventYearRanges(parsedRanges);
-    const start = String(event && (event.startYear || event.year) || '').trim();
-    const end = String(event && (event.endYear || event.startYear || event.year) || '').trim();
-    if (!start) return '';
-    return end && end !== start ? `${start}-${end}` : start;
+    return String(event && event.year || '').trim();
   },
 
   _buildTimelineEventRows(db = this.data.db) {
