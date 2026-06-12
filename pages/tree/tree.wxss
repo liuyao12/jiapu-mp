@@ -576,6 +576,8 @@ text, view, button, input { font-weight: normal !important; }
 .timeline-node .node-inner { border-right-width: 0; }
 .timeline-node-year-edge { position: absolute; z-index: 2; pointer-events: none; }
 .timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 15; pointer-events: none; }
+/* Node borders are drawn by these overlays, not by the transparent layout border on .node-inner.
+   This keeps event overlays underneath a single visible border instead of doubling border thickness on Android. */
 .node-border-edge { position: absolute; pointer-events: none; z-index: 15; }
 .node-border-edge.top { left: 0; right: 0; top: 0; height: 2rpx; }
 .node-border-edge.bottom { left: 0; right: 0; bottom: 0; height: 2rpx; }
