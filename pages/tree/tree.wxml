@@ -324,7 +324,7 @@
             <view wx:for="{{timelineEventRows}}" wx:key="id" class="timeline-event-edit-row">
               <view class="timeline-event-edit-chip tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}} {{item.isDefault ? '' : 'has-delete'}}">
                 <input class="timeline-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="name" placeholder="事件名" placeholder-class="timeline-event-placeholder-name" adjust-position="{{false}}" catchtap="catchTap" />
-                <input class="timeline-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="years" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" adjust-position="{{false}}" catchtap="catchTap" />
+                <input class="timeline-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="year" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" adjust-position="{{false}}" catchtap="catchTap" />
                 <view wx:if="{{!item.isDefault}}" class="timeline-event-delete" catchtap="onDeleteTimelineEvent" data-id="{{item.id}}">×</view>
               </view>
             </view>

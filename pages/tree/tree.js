@@ -87,10 +87,10 @@ const TREE_STYLE = {
 };
 
 const DEFAULT_TIMELINE_EVENTS = [
-  { key: 'taiping', name: '太平天国', years: '1851-1864' },
-  { key: 'boxer', name: '庚子', years: '1900' },
-  { key: 'xinhai', name: '辛亥', years: '1911' },
-  { key: 'japanese-invasion', name: '日军侵华', years: '1937-1945' }
+  { key: 'taiping', name: '太平天国', year: '1851-1864' },
+  { key: 'boxer', name: '庚子', year: '1900' },
+  { key: 'xinhai', name: '辛亥', year: '1911' },
+  { key: 'japanese-invasion', name: '日军侵华', year: '1937-1945' }
 ];
 const DEFAULT_TIMELINE_EVENT_PROXIMITY_YEARS = 80;
 
@@ -1750,7 +1750,7 @@ Page({
           .map(event => [
             event && event.id || '',
             event && event.name || '',
-            event && event.years || '',
+            event && event.year || '',
             event && event.hidden ? 'hidden' : ''
           ].join(','))
           .sort()
@@ -2215,8 +2215,8 @@ Page({
         bYear: '1864',
         dYear: '1918',
         events: [
-          { name: '赴美求學', years: '1878' },
-          { name: '支持孫中山革命', years: '1894-1918' }
+          { name: '赴美求學', year: '1878' },
+          { name: '支持孫中山革命', year: '1894-1918' }
         ],
         spouses: [
           {
@@ -2233,7 +2233,7 @@ Page({
             gender: 'female',
             bYear: '1889',
             dYear: '1973',
-            events: [{ name: '婚嫁', years: '1914' }],
+            events: [{ name: '婚嫁', year: '1914' }],
             spouses: [{ name: '孔祥熙', gender: 'male', bYear: '1880', dYear: '1967' }]
           },
           {
@@ -2242,8 +2242,8 @@ Page({
             bYear: '1893',
             dYear: '1981',
             events: [
-              { name: '婚嫁', years: '1915' },
-              { name: '中華人民共和國名譽主席', years: '1981' }
+              { name: '婚嫁', year: '1915' },
+              { name: '中華人民共和國名譽主席', year: '1981' }
             ],
             spouses: [{ name: '孫中山', alias: '逸仙', gender: 'male', bYear: '1866', dYear: '1925' }]
           },
@@ -2252,14 +2252,14 @@ Page({
             gender: 'male',
             bYear: '1894',
             dYear: '1971',
-            events: [{ name: '財政部長、外交部長', years: '1928-1945' }]
+            events: [{ name: '財政部長、外交部長', year: '1928-1945' }]
           },
           {
             name: '宋美齡',
             gender: 'female',
             bYear: '1898',
             dYear: '2003',
-            events: [{ name: '婚嫁', years: '1927' }],
+            events: [{ name: '婚嫁', year: '1927' }],
             spouses: [{ name: '蔣介石', gender: 'male', bYear: '1887', dYear: '1975' }]
           },
           {
@@ -2288,8 +2288,8 @@ Page({
         bYear: '1864',
         dYear: '1918',
         events: [
-          { name: '赴美求学', years: '1878' },
-          { name: '支持孙中山革命', years: '1894-1918' }
+          { name: '赴美求学', year: '1878' },
+          { name: '支持孙中山革命', year: '1894-1918' }
         ],
         spouses: [
           {
@@ -2306,7 +2306,7 @@ Page({
             gender: 'female',
             bYear: '1889',
             dYear: '1973',
-            events: [{ name: '婚嫁', years: '1914' }],
+            events: [{ name: '婚嫁', year: '1914' }],
             spouses: [{ name: '孔祥熙', gender: 'male', bYear: '1880', dYear: '1967' }]
           },
           {
@@ -2315,8 +2315,8 @@ Page({
             bYear: '1893',
             dYear: '1981',
             events: [
-              { name: '婚嫁', years: '1915' },
-              { name: '中华人民共和国名誉主席', years: '1981' }
+              { name: '婚嫁', year: '1915' },
+              { name: '中华人民共和国名誉主席', year: '1981' }
             ],
             spouses: [{ name: '孙中山', alias: '逸仙', gender: 'male', bYear: '1866', dYear: '1925' }]
           },
@@ -2325,14 +2325,14 @@ Page({
             gender: 'male',
             bYear: '1894',
             dYear: '1971',
-            events: [{ name: '财政部长、外交部长', years: '1928-1945' }]
+            events: [{ name: '财政部长、外交部长', year: '1928-1945' }]
           },
           {
             name: '宋美龄',
             gender: 'female',
             bYear: '1898',
             dYear: '2003',
-            events: [{ name: '婚嫁', years: '1927' }],
+            events: [{ name: '婚嫁', year: '1927' }],
             spouses: [{ name: '蒋介石', gender: 'male', bYear: '1887', dYear: '1975' }]
           },
           {
@@ -2370,7 +2370,7 @@ Page({
       '12. 清代旗人若史料以滿洲姓氏或滿文/滿洲名字標識，hometown 可用作其滿洲姓氏或滿洲名；漢軍旗人若本名是漢姓、沒有可填的滿洲姓氏，hometown 只寫「漢軍」。',
       '13. events 寫代表性個人事件，不要堆太多：多數人物 1-3 條，極特殊人物才更多。',
       '14. 常用事件名建議：科舉用「進士」「舉人」；官職用「大學士」或具體宰相職銜；女性婚年可寫「婚嫁」；帝王家族可寫「皇帝」「太子」「皇后」，或最高身份如「貴妃」；爵位用「肅親王」「秦王」或「公/侯/伯/子/男」等實際封爵。',
-      '15. events 格式為 [{"name":"皇帝","years":"626-649"}]；年份可以是 "626"、"626-649" 或 "684, 705-710"。',
+      '15. events 格式為 [{"name":"皇帝","year":"626-649"}]；year 可以是 "626"、"626-649" 或 "684, 705-710"；不要寫 years、startYear、endYear 或 date。',
       '16. 多配偶家庭中，如果某個子女的母親明確，可在該子女上寫 motherName；不要寫 motherId。',
       '17. 控制規模：選 3-12 位有代表性人物；配偶只寫有助於理解關係的人，避免把資料不足的旁支鋪得過滿。',
       '',
@@ -2394,7 +2394,7 @@ Page({
       '12. 清代旗人若史料以满洲姓氏或满文/满洲名字标识，hometown 可用作其满洲姓氏或满洲名；汉军旗人若本名是汉姓、没有可填的满洲姓氏，hometown 只写“汉军”。',
       '13. events 写代表性个人事件，不要堆太多：多数人物 1-3 条，极特殊人物才更多。',
       '14. 常用事件名建议：科举用“进士”“举人”；官职用“大学士”或具体宰相职衔；女性婚年可写“婚嫁”；帝王家族可写“皇帝”“太子”“皇后”，或最高身份如“贵妃”；爵位用“肃亲王”“秦王”或“公/侯/伯/子/男”等实际封爵。',
-      '15. events 格式为 [{"name":"皇帝","years":"626-649"}]；年份可以是 "626"、"626-649" 或 "684, 705-710"。',
+      '15. events 格式为 [{"name":"皇帝","year":"626-649"}]；year 可以是 "626"、"626-649" 或 "684, 705-710"；不要写 years、startYear、endYear 或 date。',
       '16. 多配偶家庭中，如果某个子女的母亲明确，可在该子女上写 motherName；不要写 motherId。',
       '17. 控制规模：选 3-12 位有代表性人物；配偶只写有助于理解关系的人，避免把资料不足的旁支铺得过满。',
       '',
@@ -5038,20 +5038,17 @@ Page({
       const name = String(normalized.name || normalized.title || normalized.label || '').trim();
       if (!name || name === '\u4e49\u548c\u56e2' || name === '\u5e9a\u5b50 1900') normalized.name = def.key === 'boxer' ? def.name : normalized.name;
       if (def.key === 'xinhai' && name === '\u8f9b\u4ea5 1911') normalized.name = def.name;
-      if (def.key === 'japanese-invasion' && String(normalized.endYear) === '1945' && previousDefaultVersion < 2) {
-        normalized.startYear = String(normalized.startYear) === '1931' ? '1937' : String(normalized.startYear || '1937');
-      }
       if (!normalized.name) normalized.name = def.name;
-      if (!normalized.years && !normalized.year && !normalized.startYear) normalized.years = def.years;
+      if (!normalized.year) normalized.year = def.year;
     }
     normalized.name = String(normalized.name || normalized.title || normalized.label || '').trim();
     const ranges = this._timelineEventYearRangesFromEvent(normalized);
     if (!normalized.name || !ranges || !ranges.length) return null;
     const yearLabel = this._formatTimelineEventYearRanges(ranges);
-    normalized.years = yearLabel;
+    normalized.year = yearLabel;
     delete normalized.startYear;
     delete normalized.endYear;
-    delete normalized.year;
+    delete normalized.years;
     delete normalized.date;
     delete normalized.yearLabel;
     delete normalized.yearRanges;
@@ -5100,7 +5097,7 @@ Page({
       key: event.key,
       defaultVersion: '4',
       name: event.name,
-      years: event.years,
+      year: event.year,
       ...(workspaceId ? { workspaceId } : {})
     });
 
@@ -5169,10 +5166,7 @@ Page({
   },
 
   _formatTimelineEventYears(event) {
-    const start = String(event && event.startYear || '').trim();
-    const end = String(event && event.endYear || '').trim();
-    if (!start) return '';
-    return end && end !== start ? `${start}-${end}` : start;
+    return String(event && event.year || '').trim();
   },
 
   _parseTimelineEventYearRange(text) {
@@ -5209,22 +5203,7 @@ Page({
   },
 
   _timelineEventYearRangesFromEvent(event = {}) {
-    const inlineRanges = this._parseTimelineEventYearRanges(event.yearLabel || event.years || event.date || '');
-    if (inlineRanges && inlineRanges.length) return inlineRanges;
-    const yearRanges = this._parseTimelineEventYearRanges(event.year || '');
-    if (yearRanges && yearRanges.length) return yearRanges;
-    const startYears = this._parseTimelineEventYears(event.startYear || event.start || '');
-    const endYears = this._parseTimelineEventYears(event.endYear || event.end || event.to || '');
-    const startYear = startYears && startYears.startYear;
-    const endYear = (endYears && endYears.endYear) || (startYears && startYears.endYear) || startYear;
-    if (!startYear) return null;
-    const start = parseInt(startYear, 10);
-    const end = parseInt(endYear, 10);
-    if (!Number.isFinite(start) || !Number.isFinite(end)) return null;
-    return [{
-      startYear: String(Math.min(start, end)),
-      endYear: String(Math.max(start, end))
-    }];
+    return this._parseTimelineEventYearRanges(event.yearLabel || event.year || '');
   },
 
   _timelineEventYearRangeFromEvent(event = {}) {
@@ -5247,10 +5226,7 @@ Page({
   _formatTimelineEventYears(event) {
     const parsedRanges = this._timelineEventYearRangesFromEvent(event || {});
     if (parsedRanges && parsedRanges.length) return this._formatTimelineEventYearRanges(parsedRanges);
-    const start = String(event && (event.startYear || event.year) || '').trim();
-    const end = String(event && (event.endYear || event.startYear || event.year) || '').trim();
-    if (!start) return '';
-    return end && end !== start ? `${start}-${end}` : start;
+    return String(event && event.year || '').trim();
   },
 
   _buildTimelineEventRows(db = this.data.db) {
@@ -5320,16 +5296,12 @@ Page({
     const name = String(event.name || event.title || event.label || '').trim();
     const ranges = this._timelineEventYearRangesFromEvent(event);
     if (!name || !ranges || !ranges.length) return null;
-    const years = ranges[0];
     const yearLabel = this._formatTimelineEventYearRanges(ranges);
     return {
       ...event,
       id: event.id || `personal_event_${index}`,
       name,
-      year: years.startYear,
-      startYear: years.startYear,
-      endYear: years.endYear,
-      years: yearLabel,
+      year: yearLabel,
       yearRanges: ranges,
       hidden: event.hidden === true || event.hidden === 'true' || event.checked === false
     };
@@ -5607,7 +5579,7 @@ Page({
     if (!id || !field) return;
     const rows = (this.data.timelineEventRows || []).map(row => (
       row.id === id
-        ? (field === 'years'
+        ? (field === 'year'
           ? { ...row, yearLabel: value }
           : { ...row, [field]: value, yearLabel: this._formatTimelineEventYears({ ...row, [field]: value }) })
         : row
@@ -5635,11 +5607,11 @@ Page({
     db.timelineEvents = (db.timelineEvents || []).map(event => (
       event && event.id === id
         ? (() => {
-          const { startYear, endYear, year, date, yearLabel: _yearLabel, yearRanges, ...rest } = event;
+          const { startYear, endYear, year, years, date, yearLabel: _yearLabel, yearRanges, ...rest } = event;
           return {
             ...rest,
             name,
-            years: yearLabel
+            year: yearLabel
           };
         })()
         : event
@@ -5668,7 +5640,7 @@ Page({
     db.timelineEvents.push({
       id: this._makeTimelineEventId(db, `global_${workspaceId || 'workspace'}`, name),
       name,
-      years: yearLabel,
+      year: yearLabel,
       ...(workspaceId ? { workspaceId } : {}),
     });
     this.setData({

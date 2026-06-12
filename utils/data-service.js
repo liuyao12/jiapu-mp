@@ -83,25 +83,7 @@ function formatYearRanges(ranges) {
 }
 
 function cleanYearRanges(source) {
-  const inlineRanges = cleanYearRangeListText(source && (source.yearLabel || source.years || source.date))
-    || cleanYearRangeListText(source && source.year);
-  if (inlineRanges && inlineRanges.length) return inlineRanges;
-  const singleRange = cleanYearRange(source);
-  return singleRange ? [singleRange] : null;
-}
-
-function cleanYearRange(source) {
-  const inlineRange = cleanYearRangeText(source && (source.yearLabel || source.years || source.year || source.date));
-  const startYear = cleanYear(source && (source.startYear || source.start)) || (inlineRange && inlineRange.startYear);
-  if (!startYear) return null;
-  const endYear = cleanYear(source && (source.endYear || source.end || source.to)) || (inlineRange && inlineRange.endYear) || startYear;
-  const startNum = parseInt(startYear, 10);
-  const endNum = parseInt(endYear, 10);
-  if (!Number.isFinite(startNum) || !Number.isFinite(endNum)) return null;
-  return {
-    startYear: String(Math.min(startNum, endNum)),
-    endYear: String(Math.max(startNum, endNum))
-  };
+  return cleanYearRangeListText(source && source.year);
 }
 
 function cleanGender(value) {
@@ -117,7 +99,7 @@ function cleanPersonalEventForSchema(source, index) {
   const cleaned = {
     id: cleanText(source.id) || `personal_event_${index}`,
     name,
-    years: formatYearRanges(ranges)
+    year: formatYearRanges(ranges)
   };
   if (source.hidden === true || source.hidden === 'true' || source.visible === false || source.visible === 'false') {
     cleaned.hidden = true;
@@ -181,6 +163,10 @@ function cleanPersonForSchema(source, id) {
     if (value) person[field] = value;
   });
 
+  if (person.bYear && person.dYear && person.age) {
+    delete person.age;
+  }
+
   // Older files used sharedId for what is now workspaceId. Import it as the
   // current field name, but never keep sharedId itself.
   if (!person.workspaceId) {
@@ -199,7 +185,7 @@ function cleanTimelineEventForSchema(source, index) {
   const cleaned = {
     id: cleanText(source.id) || `event_${index}`,
     name,
-    years: formatYearRanges(ranges)
+    year: formatYearRanges(ranges)
   };
   if (source.hidden === true || source.hidden === 'true' || source.visible === false || source.visible === 'false') {
     cleaned.hidden = true;
