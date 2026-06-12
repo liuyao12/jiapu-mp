@@ -62,9 +62,14 @@ Component({
     firstnameInputClass: 'val-text-inline',
     surnameHeaderClass: 'name-header-input-wrap surname-wrap',
     firstnameHeaderClass: 'name-header-input-wrap firstname-wrap',
+    surnamePartStyle: '',
+    surnameHeaderStyle: '',
+    firstnamePartStyle: '',
+    firstnameHeaderStyle: '',
     fullNameInputClass: 'val-text-inline is-auto',
     aliasInputClass: 'val-text-inline',
     rankInputClass: 'val-text-inline rank-input',
+    rankInputStyle: '',
     hometownInputClass: 'val-text-inline',
     bYearInputClass: 'life-val',
     bDateInputClass: 'life-val',
@@ -619,6 +624,29 @@ Component({
         field: 'events',
         value: this._personalEventRowsToStorage(personalEventRows)
       });
+    },
+
+    _namePartWidthPatch(surname, firstname) {
+      const countChars = (value) => Array.from(String(value || '').trim()).length;
+      const surnameChars = countChars(surname);
+      const firstnameChars = countChars(firstname);
+      const surnameHeaderWidth = Math.min(230, Math.max(96, surnameChars * 42 + 34));
+      const surnamePartWidth = surnameHeaderWidth + 32;
+      const firstnameHeaderWidth = Math.max(118, Math.min(246, firstnameChars * 42 + 38));
+      return {
+        surnamePartStyle: `flex: 0 0 ${surnamePartWidth}rpx;`,
+        surnameHeaderStyle: `width: ${surnameHeaderWidth}rpx; min-width: ${surnameHeaderWidth}rpx; max-width: 230rpx;`,
+        firstnamePartStyle: 'flex: 1 1 0; max-width: none;',
+        firstnameHeaderStyle: `min-width: 0; max-width: ${firstnameHeaderWidth}rpx;`
+      };
+    },
+
+    _rankWidthPatch(rank) {
+      const chars = Array.from(this._normalizeRankText(rank)).length;
+      const width = Math.min(104, Math.max(64, chars * 30 + 24));
+      return {
+        rankInputStyle: `flex-basis: ${width}rpx; width: ${width}rpx; min-width: ${width}rpx; max-width: 104rpx;`
+      };
     },
 
     _fieldClasses(changedFields, activeField, nameManual, fullNameEditing, lifeAutoField = '') {
@@ -1180,6 +1208,8 @@ Component({
         ...this._genderState(p.gender || 'male'),
         ...this._sectionState(creatingProfile, false, creatingProfile),
         ...this._fieldClasses(changedFields, '', nameState.nameManual, nameState.fullNameEditing, ageState.lifeAutoField),
+        ...this._namePartWidthPatch(nameState.editSurname, nameState.editFirstname),
+        ...this._rankWidthPatch(p.rank),
         ...this._buildMotherState(localMother)
       });
     },
@@ -1234,6 +1264,9 @@ Component({
         extra.showAddChildBtn = value === 'male';
         extra.showFemaleChildHint = value === 'female';
         Object.assign(extra, this._genderState(value));
+      }
+      if (field === 'rank') {
+        Object.assign(extra, this._rankWidthPatch(value));
       }
       if (field === 'alias' || field === 'rank' || field === 'hometown') {
         extra.profileSummaryAlias = field === 'alias' ? String(value || '').trim() : this.data.profileSummaryAlias;
@@ -1474,7 +1507,8 @@ Component({
         editFirstname: firstname,
         displayName,
         fullNamePlaceholder: defaultFullName || '无名',
-        fullNameValue: (!nameManual && this.data.fullNameEditing) ? (defaultFullName || '') : this.data.fullNameValue
+        fullNameValue: (!nameManual && this.data.fullNameEditing) ? (defaultFullName || '') : this.data.fullNameValue,
+        ...this._namePartWidthPatch(surname, firstname)
       });
       this.triggerEvent('updatefield', { field, value });
       if (!nameManual && defaultFullName) {

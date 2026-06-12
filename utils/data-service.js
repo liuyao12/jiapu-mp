@@ -83,9 +83,12 @@ function formatYearRanges(ranges) {
 }
 
 function cleanYearRanges(source) {
-  const inlineRanges = cleanYearRangeListText(source && (source.yearLabel || source.years || source.date))
-    || cleanYearRangeListText(source && source.year);
-  if (inlineRanges && inlineRanges.length) return inlineRanges;
+  const storedRanges = cleanYearRangeListText(source && (source.years || source.yearLabel));
+  if (storedRanges && storedRanges.length) return storedRanges;
+
+  const legacyRanges = cleanYearRangeListText(source && (source.year || source.date));
+  if (legacyRanges && legacyRanges.length) return legacyRanges;
+
   const singleRange = cleanYearRange(source);
   return singleRange ? [singleRange] : null;
 }
@@ -180,6 +183,10 @@ function cleanPersonForSchema(source, id) {
     const value = cleanText(source && source[field]);
     if (value) person[field] = value;
   });
+
+  if (person.bYear && person.dYear && person.age) {
+    delete person.age;
+  }
 
   // Older files used sharedId for what is now workspaceId. Import it as the
   // current field name, but never keep sharedId itself.

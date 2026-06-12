@@ -1,6 +1,6 @@
 const TANG_IMPERIAL_WORKSPACE_ID = 'sample_tang_imperial';
 const TANG_IMPERIAL_ROOT_ID = 'tan_imp_001-';
-const TANG_IMPERIAL_SAMPLE_VERSION = '18';
+const TANG_IMPERIAL_SAMPLE_VERSION = '19';
 const DUGU_XIN_WORKSPACE_ID = 'sample_dugu_xin';
 const DUGU_XIN_ROOT_ID = 'dug_xin_001-';
 const DUGU_XIN_SAMPLE_VERSION = '16';
@@ -35,6 +35,7 @@ const IDS = {
   liying: `${TANG_IMPERIAL_ROOT_ID}AABAB`,
   lining: `${TANG_IMPERIAL_ROOT_ID}AABAAAAAAC`,
   jiancheng: `${TANG_IMPERIAL_ROOT_ID}B`,
+  yuanji: `${TANG_IMPERIAL_ROOT_ID}C`,
   chengqian: `${TANG_IMPERIAL_ROOT_ID}AB`,
   lizhong: `${TANG_IMPERIAL_ROOT_ID}AAC`,
   lihong: `${TANG_IMPERIAL_ROOT_ID}AAD`,
@@ -83,17 +84,17 @@ function person(id, data) {
 const people = {
   [IDS.gaozu]: person(IDS.gaozu, {
     name: '唐高祖 李渊',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '渊',
     bYear: '566',
     dYear: '635',
-    children: [IDS.jiancheng, IDS.taizong],
+    children: [IDS.jiancheng, IDS.taizong, IDS.yuanji],
     events: [reignEvent('tang_emperor_gaozu', '618-626')]
   }),
   [IDS.jiancheng]: person(IDS.jiancheng, {
     name: '隐太子 李建成',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '建成',
     rank: '一',
@@ -101,9 +102,18 @@ const people = {
     dYear: '626',
     events: [crownPrinceEvent('tang_crown_prince_jiancheng', '618-626')]
   }),
+  [IDS.yuanji]: person(IDS.yuanji, {
+    name: '巢剌王 李元吉',
+    hometown: '陇西狄道',
+    surname: '李',
+    firstname: '元吉',
+    rank: '四',
+    bYear: '603',
+    dYear: '626'
+  }),
   [IDS.taizong]: person(IDS.taizong, {
     name: '唐太宗 李世民',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '世民',
     rank: '二',
@@ -118,7 +128,7 @@ const people = {
   }),
   [IDS.chengqian]: person(IDS.chengqian, {
     name: '废太子 李承乾',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '承乾',
     rank: '一',
@@ -129,7 +139,7 @@ const people = {
   }),
   [IDS.gaozong]: person(IDS.gaozong, {
     name: '唐高宗 李治',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '治',
     rank: '九',
@@ -145,7 +155,7 @@ const people = {
   }),
   [IDS.lizhong]: person(IDS.lizhong, {
     name: '燕王 李忠',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '忠',
     rank: '一',
@@ -155,7 +165,7 @@ const people = {
   }),
   [IDS.lihong]: person(IDS.lihong, {
     name: '孝敬皇帝 李弘',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '弘',
     rank: '五',
@@ -166,7 +176,7 @@ const people = {
   }),
   [IDS.lixianZhanghuai]: person(IDS.lixianZhanghuai, {
     name: '章怀太子 李贤',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '贤',
     rank: '六',
@@ -177,7 +187,7 @@ const people = {
   }),
   [IDS.zhongzong]: person(IDS.zhongzong, {
     name: '唐中宗 李显',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '显',
     rank: '七',
@@ -193,7 +203,7 @@ const people = {
   }),
   [IDS.chongjun]: person(IDS.chongjun, {
     name: '节愍太子 李重俊',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '重俊',
     rank: '三',
@@ -203,7 +213,7 @@ const people = {
   }),
   [IDS.anlePrincess]: person(IDS.anlePrincess, {
     name: '安乐公主 李裹儿',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '裹儿',
     gender: 'female',
@@ -213,7 +223,7 @@ const people = {
   }),
   [IDS.shangdi]: person(IDS.shangdi, {
     name: '唐殇帝 李重茂',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '重茂',
     rank: '四',
@@ -223,7 +233,7 @@ const people = {
   }),
   [IDS.ruizong]: person(IDS.ruizong, {
     name: '唐睿宗 李旦',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '旦',
     rank: '八',
@@ -235,7 +245,7 @@ const people = {
   }),
   [IDS.taipingPrincess]: person(IDS.taipingPrincess, {
     name: '太平公主',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '',
     gender: 'female',
@@ -245,7 +255,7 @@ const people = {
   }),
   [IDS.lichengqi]: person(IDS.lichengqi, {
     name: '让皇帝 李宪',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '宪',
     rank: '一',
@@ -255,7 +265,7 @@ const people = {
   }),
   [IDS.xuanzong]: person(IDS.xuanzong, {
     name: '唐玄宗 李隆基',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '隆基',
     rank: '三',
@@ -270,7 +280,7 @@ const people = {
   }),
   [IDS.liying]: person(IDS.liying, {
     name: '废太子 李瑛',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '瑛',
     rank: '二',
@@ -280,7 +290,7 @@ const people = {
   }),
   [IDS.suzong]: person(IDS.suzong, {
     name: '唐肃宗 李亨',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '亨',
     rank: '三',
@@ -295,7 +305,7 @@ const people = {
   }),
   [IDS.daizong]: person(IDS.daizong, {
     name: '唐代宗 李豫',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '豫',
     rank: '一',
@@ -309,7 +319,7 @@ const people = {
   }),
   [IDS.dezong]: person(IDS.dezong, {
     name: '唐德宗 李适',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '适',
     rank: '一',
@@ -323,7 +333,7 @@ const people = {
   }),
   [IDS.shunzong]: person(IDS.shunzong, {
     name: '唐顺宗 李诵',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '诵',
     rank: '一',
@@ -337,7 +347,7 @@ const people = {
   }),
   [IDS.xianzong]: person(IDS.xianzong, {
     name: '唐宪宗 李纯',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '纯',
     rank: '一',
@@ -351,7 +361,7 @@ const people = {
   }),
   [IDS.lining]: person(IDS.lining, {
     name: '惠昭太子 李宁',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '宁',
     rank: '一',
@@ -361,7 +371,7 @@ const people = {
   }),
   [IDS.muzong]: person(IDS.muzong, {
     name: '唐穆宗 李恒',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '恒',
     rank: '三',
@@ -375,7 +385,7 @@ const people = {
   }),
   [IDS.jingzong]: person(IDS.jingzong, {
     name: '唐敬宗 李湛',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '湛',
     rank: '一',
@@ -389,7 +399,7 @@ const people = {
   }),
   [IDS.chengmei]: person(IDS.chengmei, {
     name: '陈王 李成美',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '成美',
     rank: '六',
@@ -399,7 +409,7 @@ const people = {
   }),
   [IDS.wenzong]: person(IDS.wenzong, {
     name: '唐文宗 李昂',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '昂',
     rank: '二',
@@ -410,7 +420,7 @@ const people = {
   }),
   [IDS.liyong]: person(IDS.liyong, {
     name: '庄恪太子 李永',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '永',
     rank: '一',
@@ -420,7 +430,7 @@ const people = {
   }),
   [IDS.wuzong]: person(IDS.wuzong, {
     name: '唐武宗 李炎',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '炎',
     rank: '五',
@@ -430,7 +440,7 @@ const people = {
   }),
   [IDS.xuanzongLiChen]: person(IDS.xuanzongLiChen, {
     name: '唐宣宗 李忱',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '忱',
     rank: '十三',
@@ -441,7 +451,7 @@ const people = {
   }),
   [IDS.yizong]: person(IDS.yizong, {
     name: '唐懿宗 李漼',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '漼',
     rank: '一',
@@ -455,7 +465,7 @@ const people = {
   }),
   [IDS.xizong]: person(IDS.xizong, {
     name: '唐僖宗 李儇',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '儇',
     rank: '五',
@@ -468,7 +478,7 @@ const people = {
   }),
   [IDS.zhaozong]: person(IDS.zhaozong, {
     name: '唐昭宗 李晔',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '晔',
     rank: '七',
@@ -482,7 +492,7 @@ const people = {
   }),
   [IDS.aidi]: person(IDS.aidi, {
     name: '唐哀帝 李柷',
-    hometown: '陇西成纪',
+    hometown: '陇西狄道',
     surname: '李',
     firstname: '柷',
     rank: '九',
