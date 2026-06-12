@@ -435,27 +435,22 @@ function formatHometown(hometown, options = {}) {
     options.contextPerson,
     ...(Array.isArray(options.contextPeople) ? options.contextPeople : [])
   ].filter(Boolean);
-  const hasTemporalContext = contextPeople.some(person => collectPersonYears(person).length > 0);
   const useHistoricalCommandery = !!options.useHistoricalCommandery
     || prefersHistoricalCommandery(...contextPeople);
   const useSongJurisdiction = !!options.useSongJurisdiction
     || prefersSongJurisdiction(...contextPeople);
-
-  if (useHistoricalCommandery) {
-    const commandery = getHistoricalCommanderyFromAnywhere(raw, { allowLongRest: true });
-    if (commandery) return commandery;
-  }
-
-  const commanderyPrefix = !hasTemporalContext ? getHistoricalCommanderyPrefix(raw) : '';
+  const commanderyPrefix = getHistoricalCommanderyPrefix(raw)
+    || (useHistoricalCommandery ? getHistoricalCommanderyPrefix(raw, { allowLongRest: true }) : '');
   if (commanderyPrefix) return commanderyPrefix;
-
   const songJurisdictionRest = useSongJurisdiction ? getSongJurisdictionRest(raw) : '';
   if (songJurisdictionRest) return songJurisdictionRest;
 
-  const county = stripCountySuffixRest(raw);
-  if (county) return county;
-
-  return stripLeadingModernJurisdiction(raw);
+  for (let prefix of HOMETOWN_PREFIXES) {
+    if (!raw.startsWith(prefix)) continue;
+    const rest = raw.slice(prefix.length).replace(/^(省|市|行省|布政使司)/, '');
+    return rest || prefix;
+  }
+  return raw;
 }
 
 function normalizeRankText(rank) {
@@ -558,8 +553,18 @@ function parseYearRangeListText(text) {
 
 function parseEventYearRanges(event) {
   if (!event || typeof event !== 'object') return null;
-  const inlineRanges = parseYearRangeListText(event.year || '');
-  return inlineRanges && inlineRanges.length ? inlineRanges : null;
+  const inlineRanges = parseYearRangeListText(event.years || event.yearLabel || event.date || '');
+  if (inlineRanges && inlineRanges.length) return inlineRanges;
+  const yearRanges = parseYearRangeListText(event.year || '');
+  if (yearRanges && yearRanges.length) return yearRanges;
+  const start = parseYearValue(event.startYear || event.start);
+  const rawEnd = parseYearValue(event.endYear || event.end || event.to);
+  const end = rawEnd ?? start;
+  if (start === null || end === null || !Number.isFinite(start) || !Number.isFinite(end)) return null;
+  return [{
+    startYear: Math.min(start, end),
+    endYear: Math.max(start, end)
+  }];
 }
 
 function parsePersonalEventYearRange(event) {

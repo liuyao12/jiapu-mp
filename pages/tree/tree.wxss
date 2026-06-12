@@ -571,13 +571,13 @@ text, view, button, input { font-weight: normal !important; }
 
 /* ── Nodes ── */
 .node { position: absolute; top: 0; left: 0; display: flex; align-items: stretch; z-index: 10; box-sizing: border-box; overflow: visible; min-height: 0; padding: 0 !important; margin: 0 !important; }
-.node-inner { position: relative; display: flex; align-items: center; background: #fff; border: 2rpx solid rgba(0,0,0,0.12); border-radius: 0; padding: 0 14rpx 0 0; width: 100%; height: 100%; box-sizing: border-box; line-height: 1.2; min-height: 0; overflow: visible; box-shadow: none; z-index: 2; }
+.node-inner { position: relative; display: flex; align-items: center; background: #fff; border: 0 solid transparent; border-radius: 0; padding: 0 14rpx 0 0; width: 100%; height: 100%; box-sizing: border-box; line-height: 1.2; min-height: 0; overflow: visible; box-shadow: none; z-index: 2; }
 .standard-node .node-inner { height: calc(100% + 1rpx); }
 .timeline-node .node-inner { border-right-width: 0; }
 .timeline-node-year-edge { position: absolute; z-index: 2; pointer-events: none; }
 .timeline-node-inline-edge { position: absolute; top: 0; bottom: 0; z-index: 15; pointer-events: none; }
-/* Node borders are drawn by these overlays, not by the transparent layout border on .node-inner.
-   This keeps event overlays underneath a single visible border instead of doubling border thickness on Android. */
+/* Node borders are drawn by these overlays, not by .node-inner.
+   Keeping .node-inner borderless makes overlay edges sit on the true outer box, matching screenshot canvas rendering. */
 .node-border-edge { position: absolute; pointer-events: none; z-index: 15; }
 .node-border-edge.top { left: 0; right: 0; top: 0; height: 2rpx; }
 .node-border-edge.bottom { left: 0; right: 0; bottom: 0; height: 2rpx; }
