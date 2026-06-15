@@ -251,6 +251,64 @@ const PRE_TANG_HOMETOWN_PREFIXES = Array.from(new Set([
   "梓潼"
 ])).sort((a, b) => b.length - a.length);
 
+
+const POST_TANG_ADMIN_MARKERS = '省市府州郡国國路道厅廳军軍监監';
+
+function stripCountySuffixRest(raw) {
+  const countyIndex = Math.max(raw.lastIndexOf('县'), raw.lastIndexOf('縣'));
+  if (countyIndex < 0) return '';
+  const beforeCounty = raw.slice(0, countyIndex);
+  let markerIndex = -1;
+  for (let i = beforeCounty.length - 1; i >= 0; i -= 1) {
+    if (POST_TANG_ADMIN_MARKERS.includes(beforeCounty[i])) {
+      markerIndex = i;
+      break;
+    }
+  }
+  let start = markerIndex >= 0 ? markerIndex + 1 : 0;
+  if (start === 0) {
+    for (let prefix of HOMETOWN_PREFIXES) {
+      if (raw.startsWith(prefix) && raw.length > prefix.length) {
+        start = prefix.length;
+        break;
+      }
+    }
+  }
+  const county = raw.slice(start, countyIndex + 1).replace(/^(省|市|行省|布政使司)/, '');
+  return /^[\u4e00-\u9fff]{1,6}(县|縣)$/.test(county) ? county : '';
+}
+
+function getHistoricalCommanderyFromAnywhere(raw, options = {}) {
+  const allowLongRest = !!options.allowLongRest;
+  let best = '';
+  let bestIndex = Infinity;
+  for (let prefix of PRE_TANG_HOMETOWN_PREFIXES) {
+    const index = raw.indexOf(prefix);
+    if (index < 0) continue;
+    const rest = raw.slice(index + prefix.length);
+    if (hasModernHometownMarker(rest)) continue;
+    const valid = !rest
+      || /^(郡|国|國)/.test(rest)
+      || /^[\u4e00-\u9fff]{1,4}(县|縣)?$/.test(rest)
+      || allowLongRest;
+    if (!valid) continue;
+    if (index < bestIndex || (index === bestIndex && prefix.length > best.length)) {
+      best = prefix;
+      bestIndex = index;
+    }
+  }
+  return best;
+}
+
+function stripLeadingModernJurisdiction(raw) {
+  for (let prefix of HOMETOWN_PREFIXES) {
+    if (!raw.startsWith(prefix)) continue;
+    const rest = raw.slice(prefix.length).replace(/^(省|市|行省|布政使司|自治区|自治區|特别行政区|特別行政區)/, '');
+    return rest || prefix;
+  }
+  return raw;
+}
+
 function parseFirstYear(value) {
   const match = String(value || '').match(/-?\d{1,4}/);
   if (!match) return null;
@@ -274,11 +332,7 @@ function collectPersonYears(person) {
   (Array.isArray(person.events) ? person.events : []).forEach(event => {
     if (!event) return;
     [
-      event.years,
-      event.year,
-      event.date,
-      event.startYear,
-      event.endYear
+      event.year
     ].forEach(value => {
       const year = parseFirstYear(value);
       if (year !== null) years.push(year);
@@ -381,22 +435,27 @@ function formatHometown(hometown, options = {}) {
     options.contextPerson,
     ...(Array.isArray(options.contextPeople) ? options.contextPeople : [])
   ].filter(Boolean);
+  const hasTemporalContext = contextPeople.some(person => collectPersonYears(person).length > 0);
   const useHistoricalCommandery = !!options.useHistoricalCommandery
     || prefersHistoricalCommandery(...contextPeople);
   const useSongJurisdiction = !!options.useSongJurisdiction
     || prefersSongJurisdiction(...contextPeople);
-  const commanderyPrefix = getHistoricalCommanderyPrefix(raw)
-    || (useHistoricalCommandery ? getHistoricalCommanderyPrefix(raw, { allowLongRest: true }) : '');
+
+  if (useHistoricalCommandery) {
+    const commandery = getHistoricalCommanderyFromAnywhere(raw, { allowLongRest: true });
+    if (commandery) return commandery;
+  }
+
+  const commanderyPrefix = !hasTemporalContext ? getHistoricalCommanderyPrefix(raw) : '';
   if (commanderyPrefix) return commanderyPrefix;
+
   const songJurisdictionRest = useSongJurisdiction ? getSongJurisdictionRest(raw) : '';
   if (songJurisdictionRest) return songJurisdictionRest;
 
-  for (let prefix of HOMETOWN_PREFIXES) {
-    if (!raw.startsWith(prefix)) continue;
-    const rest = raw.slice(prefix.length).replace(/^(省|市|行省|布政使司)/, '');
-    return rest || prefix;
-  }
-  return raw;
+  const county = stripCountySuffixRest(raw);
+  if (county) return county;
+
+  return stripLeadingModernJurisdiction(raw);
 }
 
 function normalizeRankText(rank) {
@@ -499,18 +558,8 @@ function parseYearRangeListText(text) {
 
 function parseEventYearRanges(event) {
   if (!event || typeof event !== 'object') return null;
-  const inlineRanges = parseYearRangeListText(event.years || event.yearLabel || event.date || '');
-  if (inlineRanges && inlineRanges.length) return inlineRanges;
-  const yearRanges = parseYearRangeListText(event.year || '');
-  if (yearRanges && yearRanges.length) return yearRanges;
-  const start = parseYearValue(event.startYear || event.start);
-  const rawEnd = parseYearValue(event.endYear || event.end || event.to);
-  const end = rawEnd ?? start;
-  if (start === null || end === null || !Number.isFinite(start) || !Number.isFinite(end)) return null;
-  return [{
-    startYear: Math.min(start, end),
-    endYear: Math.max(start, end)
-  }];
+  const inlineRanges = parseYearRangeListText(event.year || '');
+  return inlineRanges && inlineRanges.length ? inlineRanges : null;
 }
 
 function parsePersonalEventYearRange(event) {
@@ -1079,13 +1128,14 @@ function calculateLayout(db, config) {
     );
   };
   const getChildBranchTargetX = (childX) => showTimeline
-    ? childX + TIMELINE_YEAR_EDGE_INSET
+    ? childX + TIMELINE_YEAR_EDGE_INSET + NODE_BORDER_W / 2
     : childX + TRUNK_OFFSET;
   const getTimelineNodeWidth = (id, p) => {
     const birthYear = getTimelineYear(id);
     const rawBirthYear = getBYear(db, id);
     const boxEndYear = getTimelineBoxEndYear(p, rawBirthYear);
-    return Math.max(0, boxEndYear - birthYear) * PX_PER_YEAR;
+    const livingYearEdgeOverlap = isLivingPerson(p) ? TIMELINE_YEAR_EDGE_W : 0;
+    return Math.max(0, (boxEndYear - birthYear) * PX_PER_YEAR + livingYearEdgeOverlap);
   };
   const getPersonalEventMarks = (id, nodeWidth, person) => {
     if (!showTimeline) return [];

@@ -32,16 +32,16 @@
         </view>
         <view wx:if="{{showNameExpanded}}" class="name-editor-header" catchtap="stop">
           <view class="name-parts-row">
-            <view class="name-part-field surname-part-field">
+            <view class="name-part-field surname-part-field" style="{{surnamePartStyle}}">
               <text class="name-part-label">姓</text>
-              <view class="{{surnameHeaderClass}}">
+              <view class="{{surnameHeaderClass}}" style="{{surnameHeaderStyle}}">
                 <text class="name-header-display surname-display">{{editSurname}}</text>
                 <input class="{{surnameInputClass}} name-header-input native-name-input" value="{{editSurname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur" data-f="surname" placeholder="" placeholder-class="val-placeholder" adjust-position="{{false}}" catchtap="stop" />
               </view>
             </view>
-            <view class="name-part-field firstname-part-field">
+            <view class="name-part-field firstname-part-field" style="{{firstnamePartStyle}}">
               <text class="name-part-label">名</text>
-              <view class="{{firstnameHeaderClass}}">
+              <view class="{{firstnameHeaderClass}}" style="{{firstnameHeaderStyle}}">
                 <text class="name-header-display firstname-display">{{editFirstname}}</text>
                 <input class="{{firstnameInputClass}} name-header-input native-name-input" value="{{editFirstname}}" bindinput="onUpdateNameParts" bindfocus="onFocus" bindblur="onBlur" data-f="firstname" placeholder="" placeholder-class="val-placeholder" adjust-position="{{false}}" catchtap="stop" />
               </view>
@@ -65,7 +65,7 @@
       <text class="row-label-inline">全名</text>
       <input class="{{fullNameInputClass}}" value="{{fullNameValue}}" bindinput="onUpdateFullName" bindfocus="onFocus" bindblur="onBlur" data-f="name" placeholder="{{fullNamePlaceholder}}" placeholder-class="full-name-placeholder" adjust-position="{{false}}" catchtap="stop" />
       <text class="row-label-inline rank-inline-label">排行</text>
-      <input class="{{rankInputClass}}" value="{{person.rank}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="rank" placeholder="一" placeholder-class="val-placeholder" adjust-position="{{false}}" />
+      <input class="{{rankInputClass}}" style="{{rankInputStyle}}" value="{{person.rank}}" bindinput="onUpdate" bindfocus="onFocus" bindblur="onBlur" catchtap="stop" data-f="rank" placeholder="一" placeholder-class="val-placeholder" adjust-position="{{false}}" />
     </view>
     <view class="profile-row-inline">
       <text class="row-label-inline">字号</text>
