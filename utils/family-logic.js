@@ -991,7 +991,9 @@ function calculateLayout(db, config) {
       || String(a.label || '').localeCompare(String(b.label || ''), 'zh-Hans-CN')
     ));
   }
-  Object.values(db.people).forEach(p => { if (p._estBYear) minY = Math.min(minY, p._estBYear); });
+  Object.entries(db.people).forEach(([id, p]) => {
+    if (isCurrentWorkspacePerson(id, p) && p._estBYear) minY = Math.min(minY, p._estBYear);
+  });
   let maxEventYear = shouldShowCurrentYear ? CURRENT_YEAR : -Infinity;
   parsedTimelineEvents.forEach(event => {
     minY = Math.min(minY, event.startYear);
