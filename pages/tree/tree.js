@@ -25,7 +25,7 @@ const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
 ]));
 
 function getTreeIconSrc(iconType, lineage) {
-  if (!iconType || iconType === 'marriage') return '';
+  if (!iconType || iconType === 'marriage' || iconType === 'marriageCollapsed') return '';
   const palette = lineage === 'affinal' ? TREE_ICON_SRC.affinal : TREE_ICON_SRC.patrilineal;
   return palette[iconType] || '';
 }
@@ -1498,7 +1498,14 @@ Page({
   },
 
   onNodeTap(e) {
-    const id = e.id || e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = e.id || dataset.id;
+    const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
+    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === dataset.renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
+    if (isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) {
+      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
+      return;
+    }
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -3201,7 +3208,12 @@ Page({
   // ─────────────────────────────────────────────
 
   onToggleCollapse(e) {
-    const id = e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = dataset.id;
+    if (Number(dataset.duplicate || 0) === 1) {
+      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
+      return;
+    }
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
@@ -7295,7 +7307,7 @@ Page({
     const type = node ? node.iconType : nodeOrType;
     const iconSrc = node ? node.iconSrc : getTreeIconSrc(type, '');
     const iconColor = color || style.iconBorderColor;
-    if (type === 'marriage') {
+    if (type === 'marriage' || type === 'marriageCollapsed') {
       ctx.fillStyle = iconColor;
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
