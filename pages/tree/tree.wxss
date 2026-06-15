@@ -630,6 +630,7 @@ text, view, button, input { font-weight: normal !important; }
 .icon-box { position: absolute; left: 18rpx; top: 50%; width: 44rpx; height: 44rpx; transform: translateY(-50%); display: flex; align-items: center; justify-content: center; margin-right: 0; flex-shrink: 0; overflow: visible; z-index: 12; }
 .node-icon-img { width: 18rpx; height: 18rpx; display: block; }
 .spouse-icon { display: flex; align-items: center; justify-content: center; font-size: 28rpx; line-height: 1; color: #55616d; opacity: 0.85; }
+.spouse-icon.collapsed-link { opacity: 1; font-weight: 600 !important; }
 .standard-node .p-label { margin-left: 64rpx; }
 
 /* ── Lines ── */
@@ -2001,4 +2002,15 @@ text, view, button, input { font-weight: normal !important; }
   color: #3c4856 !important;
   border: 1rpx solid #d5dbe3 !important;
   background: #fff !important;
+}
+
+.node.duplicate-placeholder { animation: duplicateNodeEnter 180ms ease-out; }
+.node.duplicate-placeholder .node-inner {
+  box-shadow:
+    0 0 0 4rpx rgba(80,137,128,0.20),
+    0 0 20rpx 6rpx rgba(80,137,128,0.16);
+}
+@keyframes duplicateNodeEnter {
+  from { transform: translateY(6rpx); }
+  to { transform: translateY(0); }
 }
