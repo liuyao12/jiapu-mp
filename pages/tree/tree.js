@@ -25,7 +25,7 @@ const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
 ]));
 
 function getTreeIconSrc(iconType, lineage) {
-  if (!iconType || iconType === 'marriage') return '';
+  if (!iconType || iconType === 'marriage' || iconType === 'marriageCollapsed') return '';
   const palette = lineage === 'affinal' ? TREE_ICON_SRC.affinal : TREE_ICON_SRC.patrilineal;
   return palette[iconType] || '';
 }
@@ -871,13 +871,16 @@ Page({
         rootId: db.activeRootId,
         showSpouses,
         showMaternal,
-        collapsedNodes: nextCollapsedNodes,
-        timelineEvents: this._getTimelineEventsForLayout(db)
+        collapsedNodes: nextCollapsedNodes
       };
-      return {
-        standard: Logic.calculateLayout(db, { ...common, showTimeline: false }),
-        timeline: Logic.calculateLayout(db, { ...common, showTimeline: true })
-      };
+      const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
+      const visibleProfileRange = this._getProfileYearRangeFromNodes(db, standard.nodes || []);
+      const timeline = Logic.calculateLayout(db, {
+        ...common,
+        showTimeline: true,
+        timelineEvents: this._getTimelineEventsForLayout(db, visibleProfileRange)
+      });
+      return { standard, timeline, visibleProfileRange };
     };
     let layouts = makeLayouts(collapsedNodes);
     if (
@@ -922,7 +925,7 @@ Page({
       rulerTicks: layout.rulerTicks,
       timelineEventBands: this.data.showTimeline ? (layout.timelineEventBands || []) : [],
       timelineNodeYearEdges,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db),
       _personalEventSuggestions: this._buildPersonalEventSuggestions(db),
       maxR: layout.maxR,
@@ -1084,10 +1087,9 @@ Page({
     );
   },
 
-  _getTimelineEventsForLayout(db = this.data.db) {
-    return this._buildTimelineEventRows(db)
+  _getTimelineEventsForLayout(db = this.data.db, profileRange = null) {
+    return this._buildTimelineEventRows(db, profileRange)
       .filter(event => event.checked)
-      .filter(event => this._shouldDisplayTimelineEventInLayout(event, db))
       .map(event => {
         const layoutEvent = { ...event };
         delete layoutEvent.checked;
@@ -1220,11 +1222,21 @@ Page({
     }
     const focusDescendants = this._collectFocusedDescendantIds(people, focusId);
 
-    return Object.keys(people).filter(id => {
+    const hasFocusedExpandableBranch = (id) => {
       const person = people[id];
-      const hasChildBranch = Array.isArray(person && person.children)
-        && person.children.some(childId => people[childId]);
-      if (!hasChildBranch) return false;
+      if (!person) return false;
+      if (Array.isArray(person.children) && person.children.some(childId => people[childId])) return true;
+      return !!(person.gender === 'female'
+        && this.data.showMaternal
+        && Array.isArray(person.spouses)
+        && person.spouses.some(spouseId => {
+          const spouse = people[spouseId];
+          return spouse && Array.isArray(spouse.children) && spouse.children.some(childId => people[childId]);
+        }));
+    };
+
+    return Object.keys(people).filter(id => {
+      if (!hasFocusedExpandableBranch(id)) return false;
       if (focusAncestors.has(id)) return false;
       if (focusDescendants.has(id)) return false;
       return true;
@@ -1498,7 +1510,14 @@ Page({
   },
 
   onNodeTap(e) {
-    const id = e.id || e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = e.id || dataset.id;
+    const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
+    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === dataset.renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
+    if (isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) {
+      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
+      return;
+    }
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -3201,7 +3220,12 @@ Page({
   // ─────────────────────────────────────────────
 
   onToggleCollapse(e) {
-    const id = e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = dataset.id;
+    if (Number(dataset.duplicate || 0) === 1) {
+      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
+      return;
+    }
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
@@ -4961,8 +4985,8 @@ Page({
     return Number.isFinite(year) ? year : null;
   },
 
-  _getWorkspaceProfileYearRange(db = this.data.db) {
-    const currentWorkspaceId = this._getCurrentWorkspaceIdFromDb(db);
+  _getProfileYearRangeForIds(db = this.data.db, ids = []) {
+    const people = (db && db.people) || {};
     let minYear = Infinity;
     let maxYear = -Infinity;
     const addYear = (year) => {
@@ -4971,11 +4995,12 @@ Page({
       maxYear = Math.max(maxYear, year);
     };
 
-    Object.entries((db && db.people) || {}).forEach(([id, person]) => {
-      if (currentWorkspaceId && this._personWorkspaceId(person, id, db) !== currentWorkspaceId) return;
-      addYear(this._profileYearValue(person && (person.bYear || person.bDate)));
-      addYear(this._profileYearValue(person && (person.dYear || person.dDate)));
-      (Array.isArray(person && person.events) ? person.events : []).forEach(event => {
+    (ids || []).forEach(id => {
+      const person = people[id];
+      if (!person) return;
+      addYear(this._profileYearValue(person.bYear || person.bDate));
+      addYear(this._profileYearValue(person.dYear || person.dDate));
+      (Array.isArray(person.events) ? person.events : []).forEach(event => {
         (this._timelineEventYearRangesFromEvent(event || {}) || []).forEach(range => {
           addYear(parseInt(range.startYear, 10));
           addYear(parseInt(range.endYear, 10));
@@ -4987,9 +5012,22 @@ Page({
     return { minYear, maxYear };
   },
 
-  _defaultTimelineEventNearProfileDates(event, db = this.data.db) {
+  _getProfileYearRangeFromNodes(db = this.data.db, nodes = this.data.nodes) {
+    const ids = Array.from(new Set((nodes || []).map(node => node && node.id).filter(Boolean)));
+    return this._getProfileYearRangeForIds(db, ids);
+  },
+
+  _getWorkspaceProfileYearRange(db = this.data.db) {
+    const currentWorkspaceId = this._getCurrentWorkspaceIdFromDb(db);
+    const ids = Object.entries((db && db.people) || {})
+      .filter(([id, person]) => !currentWorkspaceId || this._personWorkspaceId(person, id, db) === currentWorkspaceId)
+      .map(([id]) => id);
+    return this._getProfileYearRangeForIds(db, ids);
+  },
+
+  _defaultTimelineEventNearProfileDates(event, db = this.data.db, profileRange = null) {
     const ranges = this._timelineEventYearRangesFromEvent(event || {});
-    const profileRange = this._getWorkspaceProfileYearRange(db);
+    profileRange = profileRange || this._getWorkspaceProfileYearRange(db);
     if (!ranges || !ranges.length || !profileRange) return false;
     const minYear = profileRange.minYear - DEFAULT_TIMELINE_EVENT_PROXIMITY_YEARS;
     const maxYear = profileRange.maxYear + DEFAULT_TIMELINE_EVENT_PROXIMITY_YEARS;
@@ -5001,10 +5039,10 @@ Page({
     });
   },
 
-  _shouldDisplayTimelineEventInLayout(event, db = this.data.db) {
+  _shouldDisplayTimelineEventInLayout(event, db = this.data.db, profileRange = null) {
     if (!this._isDefaultTimelineEvent(event)) return true;
     if (this._timelineEventChangedFromDefault(event)) return true;
-    return this._defaultTimelineEventNearProfileDates(event, db);
+    return this._defaultTimelineEventNearProfileDates(event, db, profileRange);
   },
 
   _timelineEventChangedFromDefault(event) {
@@ -5229,15 +5267,19 @@ Page({
     return String(event && event.year || '').trim();
   },
 
-  _buildTimelineEventRows(db = this.data.db) {
+  _buildTimelineEventRows(db = this.data.db, profileRange = null) {
     const events = this._getGlobalTimelineEvents(db);
-    const rows = events.map(event => ({
-      ...event,
-      yearLabel: this._formatTimelineEventYears(event),
-      checked: !event.hidden,
-      isDefault: this._isDefaultTimelineEvent(event),
-      tone: EventColors.resolveEventTone(event, 3)
-    }));
+    const rows = events.map(event => {
+      const inVisibleRange = this._shouldDisplayTimelineEventInLayout(event, db, profileRange);
+      return {
+        ...event,
+        yearLabel: this._formatTimelineEventYears(event),
+        checked: !event.hidden && inVisibleRange,
+        autoHiddenByProfileRange: !event.hidden && !inVisibleRange,
+        isDefault: this._isDefaultTimelineEvent(event),
+        tone: EventColors.resolveEventTone(event, 3)
+      };
+    });
     return this._withTimelineEventNameChipWidths(rows);
   },
 
@@ -5385,7 +5427,7 @@ Page({
     this.setData({
       db,
       showTimelineEventPanel: true,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, this.data.nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db),
       timelineEventEditingId: '',
       timelineEventEditingField: '',
@@ -5441,7 +5483,7 @@ Page({
     this._saveData(db);
     this.setData({
       db,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, this.data.nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db)
     }, () => this.refreshTree());
   },
@@ -7295,7 +7337,7 @@ Page({
     const type = node ? node.iconType : nodeOrType;
     const iconSrc = node ? node.iconSrc : getTreeIconSrc(type, '');
     const iconColor = color || style.iconBorderColor;
-    if (type === 'marriage') {
+    if (type === 'marriage' || type === 'marriageCollapsed') {
       ctx.fillStyle = iconColor;
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
