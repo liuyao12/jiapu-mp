@@ -1438,7 +1438,7 @@ function calculateLayout(db, config) {
           hometownPrefix: spouseParts.hometownPrefix,
           nameSeparator: spouseParts.nameSeparator,
           life: getLifeText(s),
-          x: sX, y: sY, h: rowH, iconType: spouseHasExpandableItems ? (spouseCollapsed ? 'marriageCollapsed' : 'minus') : 'marriage',
+          x: sX, y: sY, h: rowH, iconType: spouseHasExpandableItems && spouseCollapsed ? 'marriageCollapsed' : 'marriage',
           maskStyle: getMask(s, getBYear(db, sid)),
           fadeStartPercent: getFadeStartPercent(s, getBYear(db, sid)),
           personalEventMarks: getPersonalEventMarks(sid, spouseWidth, s),
