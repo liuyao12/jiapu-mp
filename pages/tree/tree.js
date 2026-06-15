@@ -1256,10 +1256,23 @@ Page({
     const viewportRpx = this._treeViewportWidthRpx();
     const nodeLeftRpx = (node.x || 0) + 40;
     const nodeCenterRpx = (node.x || 0) + 40 + Math.min(node.w || 80, 260) / 2;
+    const parentLefts = options.includeParents
+      ? this._getTreeNodeParentIds(id)
+        .map(parentId => nodes.find(item => item.id === parentId))
+        .filter(Boolean)
+        .map(parentNode => (parentNode.x || 0) + 40)
+      : [];
+    const anchorLeftRpx = parentLefts.length > 0
+      ? Math.min(nodeLeftRpx, ...parentLefts)
+      : nodeLeftRpx;
     const maxScrollRpx = Math.max(0, (this.data.maxR || 750) - viewportRpx);
-    const rawTargetRpx = Number.isFinite(options.screenLeftRpx)
+    let rawTargetRpx = Number.isFinite(options.screenLeftRpx)
       ? nodeLeftRpx - options.screenLeftRpx
       : nodeCenterRpx - (Number.isFinite(options.screenCenterRpx) ? options.screenCenterRpx : viewportRpx / 2);
+    if (options.includeParents && parentLefts.length > 0) {
+      const parentScreenLeftRpx = Number.isFinite(options.parentScreenLeftRpx) ? options.parentScreenLeftRpx : 56;
+      rawTargetRpx = Math.min(rawTargetRpx, anchorLeftRpx - parentScreenLeftRpx);
+    }
     const targetRpx = Math.max(0, Math.min(maxScrollRpx, rawTargetRpx));
     const targetPx = Math.round(this._rpxToPx(targetRpx));
 
@@ -1285,6 +1298,17 @@ Page({
     } else {
       setTimeout(run, 0);
     }
+  },
+
+  _getTreeNodeParentIds(id) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const person = id ? people[id] : null;
+    if (!person) return [];
+    const parentIds = [];
+    const fatherId = this._getFatherId(id);
+    if (fatherId && people[fatherId]) parentIds.push(fatherId);
+    if (person.motherId && people[person.motherId]) parentIds.push(person.motherId);
+    return parentIds;
   },
 
   _rootSwitchScrollPatch() {
@@ -1623,6 +1647,8 @@ Page({
         this._scheduleScrollToTreeNode(id, {
           fallbackFirst: true,
           vertical: true,
+          includeParents: true,
+          screenLeftRpx: 260,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
@@ -2789,6 +2815,8 @@ Page({
         this._scheduleScrollToTreeNode(id, {
           fallbackFirst: true,
           vertical: true,
+          includeParents: true,
+          screenLeftRpx: 260,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
