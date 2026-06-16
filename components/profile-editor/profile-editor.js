@@ -19,7 +19,8 @@ Component({
     canAddFather: Boolean,
     showJumpBtn: Boolean,
     creatingProfile: Boolean,
-    hometownHint: String
+    hometownHint: String,
+    relationVisibilityEnabled: Boolean
   },
 
   data: {
@@ -224,6 +225,16 @@ Component({
     mother(mother) {
       if (!this._isReady || !this.properties.show) return;
       this.setData(this._buildMotherState(this._decoratePerson(mother)));
+    },
+
+    spouses(spouses) {
+      if (!this._isReady || !this.properties.show) return;
+      this.setData({ localSpouses: this._decorateRelationList(spouses || [], 'spouses') });
+    },
+
+    children(children) {
+      if (!this._isReady || !this.properties.show) return;
+      this.setData({ localChildren: this._decorateRelationList(children || [], 'children') });
     },
 
     hometownHint(hint) {
@@ -1061,7 +1072,7 @@ Component({
         const isDragging = item.id === draggingId;
         return {
           ...item,
-          cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (isDragging ? ' dragging' : ''),
+          cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (item._treeHidden ? ' tree-hidden' : '') + (isDragging ? ' dragging' : ''),
           cardStyle: isDragging ? `transform: translateY(${dragOffsetY}px) scale(1.02);` : '',
           yearText: item._displayYear || item.bYear || '',
           rankText: this._normalizeRankText(item.rank),
@@ -1790,6 +1801,19 @@ Component({
     onClose() { this.triggerEvent('close'); },
     onDelete() { this.triggerEvent('delete'); },
     onJump(e) { this.triggerEvent('jump', e.currentTarget.dataset); },
+
+    onRelationCardTap(e) {
+      const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+      if (!dataset.id) return;
+      if (!this.properties.relationVisibilityEnabled) {
+        this.triggerEvent('jump', dataset);
+        return;
+      }
+      this.triggerEvent('relationvisibilitytoggle', {
+        id: dataset.id,
+        type: dataset.type || ''
+      });
+    },
     onJumpToTree(e) {
       this.triggerEvent('closeprofile');
       this.triggerEvent('jumptotree', e.currentTarget.dataset);

@@ -223,6 +223,19 @@ function cleanBundledSampleVersions(sourceVersions) {
   }, {});
 }
 
+function cleanIdList(sourceIds) {
+  if (!Array.isArray(sourceIds)) return [];
+  const used = new Set();
+  return sourceIds
+    .map(id => cleanText(id))
+    .filter(Boolean)
+    .filter(id => {
+      if (used.has(id)) return false;
+      used.add(id);
+      return true;
+    });
+}
+
 function cleanDbForSchema(db, allowEmpty = true) {
   const source = db && typeof db === 'object' ? db : {};
   if (!source.people || typeof source.people !== 'object' || Array.isArray(source.people)) {
@@ -239,6 +252,12 @@ function cleanDbForSchema(db, allowEmpty = true) {
     people: result.people,
     timelineEvents: cleanTimelineEventsForSchema(source.timelineEvents)
   };
+  const hiddenTreeIds = cleanIdList(source.hiddenTreeIds)
+    .map(id => result.renameMap[id] || id)
+    .filter(id => !!result.people[id]);
+  if (hiddenTreeIds.length) {
+    cleanDb.hiddenTreeIds = hiddenTreeIds;
+  }
   const bundledSampleVersions = cleanBundledSampleVersions(source.bundledSampleVersions);
   if (Object.keys(bundledSampleVersions).length) {
     cleanDb.bundledSampleVersions = bundledSampleVersions;
@@ -445,6 +464,7 @@ function buildExportPayload(db, options = {}) {
     activeRootId: cleanDb.activeRootId || null,
     people: cleanDb.people,
     timelineEvents: cleanDb.timelineEvents,
+    hiddenTreeIds: cleanDb.hiddenTreeIds || [],
     rootName: getDisplayName(root)
   };
 }

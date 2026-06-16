@@ -206,7 +206,7 @@
           <text class="row-label">配偶</text>
           <view class="card-list">
             <view wx:for="{{localSpouses}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
-              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+              <view class="name-scroll-container" bindtap="onRelationCardTap" data-id="{{item.id}}" data-type="spouses">
                 <view class="rel-label-scroll scrolling-text">
                   <text class="rel-name-txt">{{item._displayName}}</text>
                   <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
@@ -225,7 +225,7 @@
           <text class="row-label">子女</text>
           <view class="card-list">
             <view wx:for="{{localChildren}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
-              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+              <view class="name-scroll-container" bindtap="onRelationCardTap" data-id="{{item.id}}" data-type="children">
                 <view class="rel-label-scroll scrolling-text">
                   <text class="rel-name-txt">{{item._displayName}}</text>
                   <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
