@@ -19,7 +19,8 @@ Component({
     canAddFather: Boolean,
     showJumpBtn: Boolean,
     creatingProfile: Boolean,
-    hometownHint: String
+    hometownHint: String,
+    relationVisibilityEnabled: Boolean
   },
 
   data: {
@@ -1801,9 +1802,13 @@ Component({
     onDelete() { this.triggerEvent('delete'); },
     onJump(e) { this.triggerEvent('jump', e.currentTarget.dataset); },
 
-    onToggleRelationVisibility(e) {
+    onRelationCardTap(e) {
       const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
       if (!dataset.id) return;
+      if (!this.properties.relationVisibilityEnabled) {
+        this.triggerEvent('jump', dataset);
+        return;
+      }
       this.triggerEvent('relationvisibilitytoggle', {
         id: dataset.id,
         type: dataset.type || ''

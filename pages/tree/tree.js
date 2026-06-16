@@ -98,6 +98,7 @@ Page({
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
     collapsedNodes: [], hiddenTreeIds: [], showDrawer: false,
+    canToggleRelationVisibility: false,
     showEmptyTree: false,
     showTreeArea: false,
     editingId: '',
@@ -1479,10 +1480,17 @@ Page({
     };
   },
 
+  _canToggleProfileRelationVisibility(id) {
+    if (!id) return false;
+    return (this.data.nodes || []).some(node => (
+      node && node.id === id && !node.isSpouse && !node.isDuplicatePlaceholder
+    ));
+  },
+
   onRelationVisibilityToggle(e) {
     const detail = (e && e.detail) || {};
     const id = detail.id;
-    if (!id) return;
+    if (!id || !this.data.canToggleRelationVisibility) return;
     const db = JSON.parse(JSON.stringify(this.data.db || { activeRootId: null, people: {} }));
     const hidden = Array.isArray(db.hiddenTreeIds) ? [...db.hiddenTreeIds] : [...(this.data.hiddenTreeIds || [])];
     const index = hidden.indexOf(id);
@@ -1674,6 +1682,7 @@ Page({
       _pendingMotherSelected: false,
       showDrawer: true,
       canAddChild: p.gender === 'male',
+      canToggleRelationVisibility: this._canToggleProfileRelationVisibility(id),
       _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
       _displayChildren: this._buildProfileChildren(id, p),
       _displayFather: displayFather,
