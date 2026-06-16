@@ -367,6 +367,189 @@
       <scroll-view class="screenshot-preview-wrap" scroll-y="{{true}}" scroll-x="{{true}}">
         <image class="screenshot-preview-image" src="{{screenshotPreviewImagePath}}" mode="widthFix" bindtap="onPreviewScreenshotImage"></image>
       </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{showAiImportPanel}}" class="ai-import-overlay" bindtap="closeAiImportPanel">
+    <view class="ai-import-panel" catchtap="catchTap">
+      <view class="ai-import-header">
+        <view class="ai-import-title-group">
+          <text class="ai-import-title">名人家谱 问AI</text>
+          <text class="ai-import-subtitle">复制提示词到你常用的 AI，再把 JSON 粘贴回来。</text>
+        </view>
+        <button class="ai-import-close" bindtap="closeAiImportPanel">×</button>
+      </view>
+
+      <scroll-view class="ai-import-body" scroll-y>
+        <view class="ai-import-section">
+          <text class="ai-import-label">人物、家族或多个姓名</text>
+          <input class="ai-import-input" value="{{aiPromptTarget}}" bindinput="onAiPromptTargetInput" placeholder="如：唐代李氏皇族、苏轼 苏辙、李世民 武则天" placeholder-class="ai-import-placeholder" adjust-position="{{false}}" />
+        </view>
+
+        <view class="ai-import-section">
+          <view class="ai-import-section-head prompt">
+            <view class="ai-import-prompt-title-line">
+              <text class="ai-import-label inline">提示词</text>
+              <view class="ai-import-script-toggle">
+                <view class="ai-import-script-option {{!aiUseTraditionalChinese ? 'active' : ''}}" data-variant="simplified" bindtap="onAiChineseVariantTap">
+                  <text>简</text>
+                </view>
+                <view class="ai-import-script-option {{aiUseTraditionalChinese ? 'active' : ''}}" data-variant="traditional" bindtap="onAiChineseVariantTap">
+                  <text>繁</text>
+                </view>
+              </view>
+            </view>
+            <button class="ai-import-small-btn" size="mini" bindtap="copyAiPrompt">复制</button>
+          </view>
+          <textarea class="ai-import-textarea prompt" value="{{aiPromptText}}" bindinput="onAiPromptTextInput" maxlength="-1"></textarea>
+        </view>
+
+        <view class="ai-import-section">
+          <view class="ai-import-section-head">
+            <text class="ai-import-label">AI 返回的 JSON</text>
+            <button class="ai-import-small-btn" size="mini" bindtap="pasteAiJsonFromClipboard">粘贴</button>
+          </view>
+          <textarea class="ai-import-textarea json" value="{{aiJsonText}}" bindinput="onAiJsonTextInput" maxlength="-1" placeholder="把 AI 输出的 JSON 粘贴在这里" placeholder-class="ai-import-placeholder"></textarea>
+        </view>
+      </scroll-view>
+
+      <view class="ai-import-footer">
+        <button class="ai-import-secondary" bindtap="closeAiImportPanel">取消</button>
+        <button class="ai-import-primary" bindtap="onImportAiJson">导入 JSON</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showJsonImportPanel}}" class="ai-import-overlay" bindtap="closeJsonImportPanel">
+    <view class="ai-import-panel json-import-panel" catchtap="catchTap">
+      <view class="ai-import-header">
+        <view class="ai-import-title-group">
+          <text class="ai-import-title">导入 JSON</text>
+          <text class="ai-import-subtitle">粘贴 JSON 文本，或从微信聊天/群文件选择 JSON。</text>
+        </view>
+        <button class="ai-import-close" bindtap="closeJsonImportPanel">×</button>
+      </view>
+
+      <scroll-view class="ai-import-body" scroll-y>
+        <view class="ai-import-section">
+          <view class="ai-import-section-head">
+            <text class="ai-import-label">JSON 文本</text>
+            <button class="ai-import-small-btn" size="mini" bindtap="pasteJsonImportFromClipboard">粘贴</button>
+          </view>
+          <textarea class="ai-import-textarea json" value="{{jsonImportText}}" bindinput="onJsonImportTextInput" maxlength="-1" placeholder="把导出的 JSON 或 AI 返回的 JSON 粘贴在这里" placeholder-class="ai-import-placeholder"></textarea>
+        </view>
+      </scroll-view>
+
+      <view class="ai-import-footer">
+        <button class="ai-import-secondary" bindtap="closeJsonImportPanel">取消</button>
+        <button class="ai-import-secondary" bindtap="onChooseImportFile">选文件</button>
+        <button class="ai-import-primary" bindtap="onImportJsonText">导入</button>
+      </view>
+    </view>
+  </view>
+
+  <view wx:if="{{showSpousePicker}}" class="spouse-picker-overlay" bindtap="closeSpousePicker">
+    <view class="spouse-picker-panel" catchtap="catchTap">
+      <view class="spouse-picker-header">
+        <view class="spouse-picker-title-group">
+          <text class="spouse-picker-title">{{spousePickerTitle}}</text>
+          <text wx:if="{{spousePickerTargetName}}" class="spouse-picker-subtitle">{{spousePickerTargetName}}</text>
+        </view>
+        <button class="spouse-picker-close" bindtap="closeSpousePicker">×</button>
+      </view>
+      <text class="spouse-picker-hint">{{spousePickerHint}}</text>
+      <scroll-view class="spouse-picker-list" scroll-y>
+        <view wx:if="{{spousePickerResults.length === 0}}" class="spouse-picker-empty">
+          <text>没有可选成员</text>
+        </view>
+        <view
+          wx:for="{{spousePickerResults}}"
+          wx:key="id"
+          class="spouse-picker-item {{item.gender || 'unknown'}}"
+          catchtap="onSelectExistingSpouse"
+          data-id="{{item.id}}"
+        >
+          <view class="spouse-picker-person">
+            <view class="spouse-picker-name-row">
+              <text class="spouse-picker-name">{{item._displayName}}</text>
+              <text wx:if="{{item._lifeLabel}}" class="spouse-picker-life">{{item._lifeLabel}}</text>
+            </view>
+            <view class="spouse-picker-meta-row">
+              <text class="spouse-picker-chip {{item._workspaceRank === 0 ? 'current' : 'other'}}">{{item._workspaceLabel}}</text>
+              <text wx:if="{{item._progenitorName}}" class="spouse-picker-root">{{item._progenitorName}}</text>
+            </view>
+          </view>
+          <text class="spouse-picker-action">选择</text>
+        </view>
+      </scroll-view>
+      <button class="spouse-picker-new" bindtap="onContinueNewSpouse">{{spousePickerNewLabel}}</button>
+    </view>
+  </view>
+
+  <view wx:if="{{showTimelineEventPanel}}" class="timeline-event-overlay" bindtap="closeTimelineEventPanel">
+    <view class="timeline-event-panel" catchtap="catchTap">
+      <view class="timeline-event-header">
+        <text class="timeline-event-title">时间轴事件</text>
+      </view>
+      <scroll-view class="timeline-event-list" scroll-y>
+        <view class="timeline-event-section">
+          <text class="timeline-event-section-title">全局事件</text>
+          <view wx:if="{{!showTimelineEventEditor}}" class="timeline-event-chip-row">
+            <view wx:for="{{timelineEventRows}}" wx:key="id" class="timeline-event-chip tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}}" catchtap="onToggleTimelineEventChip" data-id="{{item.id}}">
+              <text class="timeline-event-chip-name">{{item.name}}</text>
+              <text class="timeline-event-chip-year">{{item.yearLabel}}</text>
+            </view>
+            <view wx:if="{{!showTimelineEventDraft}}" class="timeline-event-mini-add" catchtap="onShowTimelineEventDraft">+</view>
+            <view wx:if="{{!showTimelineEventDraft}}" class="timeline-event-edit-icon" catchtap="onEditTimelineEvents">✎</view>
+          </view>
+          <view wx:if="{{showTimelineEventEditor}}" class="timeline-event-edit-flow">
+            <view wx:for="{{timelineEventRows}}" wx:key="id" class="timeline-event-edit-row">
+              <view class="timeline-event-edit-chip tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}} {{item.isDefault ? '' : 'has-delete'}}">
+                <input class="timeline-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="name" placeholder="事件名" placeholder-class="timeline-event-placeholder-name" adjust-position="{{false}}" catchtap="catchTap" />
+                <input class="timeline-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onTimelineEventRowInput" bindblur="onTimelineEventRowBlur" data-id="{{item.id}}" data-field="year" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" adjust-position="{{false}}" catchtap="catchTap" />
+                <view wx:if="{{!item.isDefault}}" class="timeline-event-delete" catchtap="onDeleteTimelineEvent" data-id="{{item.id}}">×</view>
+              </view>
+            </view>
+            <button class="timeline-event-edit-done" size="mini" catchtap="onFinishTimelineEventEditing">OK</button>
+          </view>
+          <view wx:if="{{showTimelineEventDraft}}" class="timeline-event-form">
+            <view class="timeline-event-edit-chip tone-0 is-new">
+              <input class="timeline-event-edit-input name" style="width:{{timelineEventDraftNameWidth}};" value="{{timelineEventDraftName}}" placeholder="事件名" placeholder-class="timeline-event-placeholder-name" bindinput="onTimelineEventDraftInput" data-field="timelineEventDraftName" adjust-position="{{false}}" catchtap="catchTap" />
+              <input class="timeline-event-edit-input year" style="width:{{timelineEventDraftYearWidth}};" value="{{timelineEventDraftYears}}" placeholder="年份/起止年" placeholder-class="timeline-event-placeholder-year" bindinput="onTimelineEventDraftInput" data-field="timelineEventDraftYears" adjust-position="{{false}}" catchtap="catchTap" />
+            </view>
+            <button class="timeline-event-add" size="mini" catchtap="onAddTimelineEvent">确定</button>
+            <view class="timeline-event-cancel" catchtap="onCancelTimelineEventDraft">×</view>
+          </view>
+        </view>
+
+        <view class="timeline-event-section personal">
+          <text class="timeline-event-section-title">个人事件</text>
+          <view wx:if="{{timelinePersonalEventRows.length > 0}}" class="timeline-event-chip-row personal">
+            <view wx:for="{{timelinePersonalEventRows}}" wx:key="id" class="timeline-event-chip personal tone-{{item.tone}} {{item.checked ? '' : 'is-hidden'}}" catchtap="onToggleTimelinePersonalEvent" data-index="{{index}}">
+              <text class="timeline-event-chip-name">{{item.name}}</text>
+              <text class="timeline-event-chip-year">{{item.countLabel}}</text>
+            </view>
+          </view>
+          <view wx:else class="timeline-event-empty">暂无个人事件</view>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view wx:if="{{showScreenshotPreview}}" class="screenshot-preview-overlay" bindtap="closeScreenshotPreview">
+    <view class="screenshot-preview-panel" style="transform: translateY({{screenshotPreviewDrawerY}}px);" catchtap="catchTap">
+      <view class="screenshot-preview-drag-handle" catchtouchstart="onScreenshotPreviewTouchStart" catchtouchmove="onScreenshotPreviewTouchMove" catchtouchend="onScreenshotPreviewTouchEnd">
+        <view class="screenshot-preview-handle-bar"></view>
+      </view>
+      <view class="screenshot-preview-header">
+        <button class="screenshot-preview-close" size="mini" bindtap="closeScreenshotPreview">×</button>
+        <text class="screenshot-preview-title">截图预览</text>
+        <view class="screenshot-preview-header-spacer"></view>
+      </view>
+
+      <scroll-view class="screenshot-preview-wrap" scroll-y="{{true}}" scroll-x="{{true}}">
+        <image class="screenshot-preview-image" src="{{screenshotPreviewImagePath}}" mode="widthFix" bindtap="onPreviewScreenshotImage"></image>
+      </scroll-view>
 
       <view class="screenshot-preview-actions">
         <button class="screenshot-preview-action" size="mini" bindtap="onSaveScreenshotPreview">保存</button>
