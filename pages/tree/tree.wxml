@@ -108,7 +108,6 @@
             <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}" data-duplicate="{{item.isDuplicatePlaceholder ? 1 : 0}}">
                <view wx:if="{{showTimeline && item.timelineIconHasExtra}}" class="timeline-icon-fill" style="width:{{item.timelineIconFillW || 0}}rpx; background:{{item.nodeFillColor}};"></view>
                <image wx:if="{{item.iconSrc}}" class="node-icon-img" src="{{item.iconSrc}}" mode="aspectFit"></image>
-               <view wx:elif="{{item.iconType == 'marriage' || item.iconType == 'marriageCollapsed'}}" class="spouse-icon {{item.iconType == 'marriageCollapsed' ? 'collapsed-link' : ''}}" style="color:{{item.iconColor || treeStyle.marriageIconColor}};">⚭</view>
             </view>
             <view class="p-label" style="margin-left:{{item.labelMarginLeft}}rpx;">
               <text wx:if="{{item.hometownPrefix}}" class="p-hometown" style="color:{{treeStyle.nameColor}};">{{item.hometownPrefix}}{{item.nameSeparator}}</text>

@@ -8,30 +8,17 @@ const TIMELINE_YEAR_WIDTH = 6;
 const TIMELINE_EDGE_MARK_WIDTH = 2;
 const TIMELINE_EDGE_INSET = (TIMELINE_YEAR_WIDTH - TIMELINE_EDGE_MARK_WIDTH) / 2;
 const TREE_ICON_SRC = {
-  patrilineal: {
-    plus: '/assets/tree-icon-plus.png',
-    minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png',
-    marriage: '/assets/tree-icon-link.png',
-    marriageCollapsed: '/assets/tree-icon-link-filled.png'
-  },
-  affinal: {
-    plus: '/assets/tree-icon-plus.png',
-    minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png',
-    marriage: '/assets/tree-icon-link.png',
-    marriageCollapsed: '/assets/tree-icon-link-filled.png'
-  }
+  plus: '/assets/tree-icon-plus.png',
+  minus: '/assets/tree-icon-minus.png',
+  leaf: '/assets/tree-icon-leaf.png',
+  marriage: '/assets/tree-icon-link.png',
+  marriageCollapsed: '/assets/tree-icon-link-filled.png'
 };
-const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
-  ...Object.values(TREE_ICON_SRC.patrilineal),
-  ...Object.values(TREE_ICON_SRC.affinal)
-]));
+const TREE_ICON_IMAGE_SOURCES = Object.values(TREE_ICON_SRC);
 
-function getTreeIconSrc(iconType, lineage) {
+function getTreeIconSrc(iconType) {
   if (!iconType) return '';
-  const palette = lineage === 'affinal' ? TREE_ICON_SRC.affinal : TREE_ICON_SRC.patrilineal;
-  return palette[iconType] || '';
+  return TREE_ICON_SRC[iconType] || '';
 }
 
 const TREE_STYLE = {
@@ -7373,6 +7360,47 @@ Page({
     });
   },
 
+  _drawMarriageIconFallback(ctx, x, y, filled = false, color = TREE_STYLE.iconBorderColor) {
+    const cx1 = x + 7;
+    const cx2 = x + 11;
+    const cy = y + 9;
+    const r = 5;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    if (filled) {
+      const halfGap = (cx2 - cx1) / 2;
+      const midX = (cx1 + cx2) / 2;
+      const intersectionY = Math.sqrt(Math.max(0, r * r - halfGap * halfGap));
+      const theta = Math.atan2(intersectionY, halfGap);
+      ctx.beginPath();
+      ctx.moveTo(midX, cy - intersectionY);
+      ctx.arc(cx1, cy, r, -theta, theta, true);
+      ctx.arc(cx2, cy, r, Math.PI - theta, Math.PI + theta, false);
+      ctx.closePath();
+      ctx.moveTo(midX, cy - intersectionY);
+      ctx.arc(cx2, cy, r, Math.PI + theta, Math.PI - theta, false);
+      ctx.arc(cx1, cy, r, theta, -theta, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx1, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx2, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx1, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx2, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+
   _drawScreenshotIcon(ctx, nodeOrType, x, y, color) {
     const style = TREE_STYLE;
     const node = typeof nodeOrType === 'object' ? nodeOrType : null;
@@ -7386,11 +7414,7 @@ Page({
     }
 
     if (type === 'marriage' || type === 'marriageCollapsed') {
-      ctx.fillStyle = iconColor;
-      ctx.font = '28px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('⚭', x - 2, y - 4);
+      this._drawMarriageIconFallback(ctx, x, y, type === 'marriageCollapsed', iconColor);
       return;
     }
 
