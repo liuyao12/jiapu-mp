@@ -8,26 +8,17 @@ const TIMELINE_YEAR_WIDTH = 6;
 const TIMELINE_EDGE_MARK_WIDTH = 2;
 const TIMELINE_EDGE_INSET = (TIMELINE_YEAR_WIDTH - TIMELINE_EDGE_MARK_WIDTH) / 2;
 const TREE_ICON_SRC = {
-  patrilineal: {
-    plus: '/assets/tree-icon-plus.png',
-    minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png'
-  },
-  affinal: {
-    plus: '/assets/tree-icon-plus.png',
-    minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png'
-  }
+  plus: '/assets/tree-icon-plus.png',
+  minus: '/assets/tree-icon-minus.png',
+  leaf: '/assets/tree-icon-leaf.png',
+  marriage: '/assets/tree-icon-link.png',
+  marriageCollapsed: '/assets/tree-icon-link-filled.png'
 };
-const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
-  ...Object.values(TREE_ICON_SRC.patrilineal),
-  ...Object.values(TREE_ICON_SRC.affinal)
-]));
+const TREE_ICON_IMAGE_SOURCES = Object.values(TREE_ICON_SRC);
 
-function getTreeIconSrc(iconType, lineage) {
-  if (!iconType || iconType === 'marriage') return '';
-  const palette = lineage === 'affinal' ? TREE_ICON_SRC.affinal : TREE_ICON_SRC.patrilineal;
-  return palette[iconType] || '';
+function getTreeIconSrc(iconType) {
+  if (!iconType) return '';
+  return TREE_ICON_SRC[iconType] || '';
 }
 
 const TREE_STYLE = {
@@ -106,7 +97,7 @@ Page({
     treeTopGap: TREE_STYLE.timelineBaseTopGap,
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
-    collapsedNodes: [], showDrawer: false,
+    collapsedNodes: [], hiddenTreeIds: [], showDrawer: false,
     showEmptyTree: false,
     showTreeArea: false,
     editingId: '',
@@ -164,7 +155,9 @@ Page({
     screenshotPreviewImagePath: '',
     screenshotPreviewImageWidth: 0,
     screenshotPreviewImageHeight: 0,
-    screenshotPreviewDrawerY: 0
+    screenshotPreviewDrawerY: 0,
+    duplicateFlashId: '',
+    duplicateFlashOriginRenderKey: ''
   },
 
   // Non-reactive state cached here (not in this.data to avoid setData overhead)
@@ -175,6 +168,7 @@ Page({
   _windowHeight: 667,
   _scrollLeftPx: 0,
   _scrollTopPx: 0,
+  _duplicateFlashTimer: null,
 
   // ─────────────────────────────────────────────
   // Lifecycle
@@ -872,12 +866,16 @@ Page({
         showSpouses,
         showMaternal,
         collapsedNodes: nextCollapsedNodes,
-        timelineEvents: this._getTimelineEventsForLayout(db)
+        hiddenTreeIds: db.hiddenTreeIds || []
       };
-      return {
-        standard: Logic.calculateLayout(db, { ...common, showTimeline: false }),
-        timeline: Logic.calculateLayout(db, { ...common, showTimeline: true })
-      };
+      const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
+      const visibleProfileRange = this._getProfileYearRangeFromNodes(db, standard.nodes || []);
+      const timeline = Logic.calculateLayout(db, {
+        ...common,
+        showTimeline: true,
+        timelineEvents: this._getTimelineEventsForLayout(db, visibleProfileRange)
+      });
+      return { standard, timeline, visibleProfileRange };
     };
     let layouts = makeLayouts(collapsedNodes);
     if (
@@ -922,7 +920,7 @@ Page({
       rulerTicks: layout.rulerTicks,
       timelineEventBands: this.data.showTimeline ? (layout.timelineEventBands || []) : [],
       timelineNodeYearEdges,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db),
       _personalEventSuggestions: this._buildPersonalEventSuggestions(db),
       maxR: layout.maxR,
@@ -982,6 +980,10 @@ Page({
   },
 
   _decorateTreeNodes(nodes) {
+    const idCounts = (nodes || []).reduce((counts, node) => {
+      if (node && node.id) counts[node.id] = (counts[node.id] || 0) + 1;
+      return counts;
+    }, {});
     return (nodes || []).map(node => {
       const nodeFillColor = node.gender === 'male'
         ? TREE_STYLE.maleFill
@@ -1013,6 +1015,7 @@ Page({
         ...node,
         iconColor: node.iconType === 'marriage' ? this._getLineageToneColor(node.lineage) : TREE_STYLE.iconBorderColor,
         iconSrc: getTreeIconSrc(node.iconType, node.lineage),
+        isDuplicateInstance: !!(node.id && idCounts[node.id] > 1),
         nodeFillColor,
         nodeBorderColor,
         labelNudgeX,
@@ -1084,10 +1087,9 @@ Page({
     );
   },
 
-  _getTimelineEventsForLayout(db = this.data.db) {
-    return this._buildTimelineEventRows(db)
+  _getTimelineEventsForLayout(db = this.data.db, profileRange = null) {
+    return this._buildTimelineEventRows(db, profileRange)
       .filter(event => event.checked)
-      .filter(event => this._shouldDisplayTimelineEventInLayout(event, db))
       .map(event => {
         const layoutEvent = { ...event };
         delete layoutEvent.checked;
@@ -1219,12 +1221,29 @@ Page({
       currentId = this._getFatherId(currentId);
     }
     const focusDescendants = this._collectFocusedDescendantIds(people, focusId);
+    const spouseIds = new Set();
+    Object.values(people).forEach(person => {
+      (Array.isArray(person && person.spouses) ? person.spouses : []).forEach(spouseId => {
+        if (people[spouseId]) spouseIds.add(spouseId);
+      });
+    });
+
+    const hasFocusedExpandableBranch = (id) => {
+      const person = people[id];
+      if (!person) return false;
+      if (Array.isArray(person.children) && person.children.some(childId => people[childId])) return true;
+      return !!(person.gender === 'female'
+        && this.data.showMaternal
+        && Array.isArray(person.spouses)
+        && person.spouses.some(spouseId => {
+          const spouse = people[spouseId];
+          return spouse && Array.isArray(spouse.children) && spouse.children.some(childId => people[childId]);
+        }));
+    };
 
     return Object.keys(people).filter(id => {
-      const person = people[id];
-      const hasChildBranch = Array.isArray(person && person.children)
-        && person.children.some(childId => people[childId]);
-      if (!hasChildBranch) return false;
+      if (!hasFocusedExpandableBranch(id)) return false;
+      if (spouseIds.has(id)) return false;
       if (focusAncestors.has(id)) return false;
       if (focusDescendants.has(id)) return false;
       return true;
@@ -1235,7 +1254,9 @@ Page({
     const nodes = this.data.nodes || [];
     if (!nodes.length) return;
 
-    let node = id ? nodes.find(item => item.id === id) : null;
+    let node = options.renderKey
+      ? nodes.find(item => item.renderKey === options.renderKey)
+      : (id ? nodes.find(item => item.id === id) : null);
     if (!node && options.fallbackFirst) {
       node = nodes.find(item => !item.isSpouse) || nodes[0];
     }
@@ -1244,10 +1265,16 @@ Page({
     const viewportRpx = this._treeViewportWidthRpx();
     const nodeLeftRpx = (node.x || 0) + 40;
     const nodeCenterRpx = (node.x || 0) + 40 + Math.min(node.w || 80, 260) / 2;
+    const horizontalAnchorNode = options.horizontalAnchorId
+      ? nodes.find(item => item.id === options.horizontalAnchorId)
+      : null;
+    const horizontalNode = horizontalAnchorNode || node;
+    const horizontalLeftRpx = (horizontalNode.x || 0) + 40;
+    const horizontalCenterRpx = horizontalLeftRpx + Math.min(horizontalNode.w || 80, 260) / 2;
     const maxScrollRpx = Math.max(0, (this.data.maxR || 750) - viewportRpx);
     const rawTargetRpx = Number.isFinite(options.screenLeftRpx)
-      ? nodeLeftRpx - options.screenLeftRpx
-      : nodeCenterRpx - (Number.isFinite(options.screenCenterRpx) ? options.screenCenterRpx : viewportRpx / 2);
+      ? horizontalLeftRpx - options.screenLeftRpx
+      : horizontalCenterRpx - (Number.isFinite(options.screenCenterRpx) ? options.screenCenterRpx : viewportRpx / 2);
     const targetRpx = Math.max(0, Math.min(maxScrollRpx, rawTargetRpx));
     const targetPx = Math.round(this._rpxToPx(targetRpx));
 
@@ -1273,6 +1300,25 @@ Page({
     } else {
       setTimeout(run, 0);
     }
+  },
+
+  _getTreeNodeParentIds(id) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const person = id ? people[id] : null;
+    if (!person) return [];
+    const parentIds = [];
+    const fatherId = this._getFatherId(id);
+    if (fatherId && people[fatherId]) parentIds.push(fatherId);
+    if (person.motherId && people[person.motherId]) parentIds.push(person.motherId);
+    return parentIds;
+  },
+
+  _getTreeJumpHorizontalAnchorId(id) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const fatherId = this._getFatherId(id);
+    if (fatherId && people[fatherId]) return fatherId;
+    const parentIds = this._getTreeNodeParentIds(id);
+    return parentIds[0] || id;
   },
 
   _rootSwitchScrollPatch() {
@@ -1410,8 +1456,47 @@ Page({
     const p = this._withEditableNameParts(person);
     p._displayName = this._computeDisplayName(p);
     p._displayYear = p.bYear || '';
+    p._treeHidden = this._isTreeIdHidden(p.id);
     p._otherTree = this._isOutsideCurrentProgenitor(p);
     return p;
+  },
+
+  _isTreeIdHidden(id) {
+    if (!id) return false;
+    const dbHidden = this.data.db && Array.isArray(this.data.db.hiddenTreeIds) ? this.data.db.hiddenTreeIds : null;
+    const hidden = dbHidden || this.data.hiddenTreeIds || [];
+    return hidden.includes(id);
+  },
+
+  _profileRelationDisplayPatch(id = this.data.editingId) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const p = id && people[id];
+    if (!p) return {};
+    const spouseObjects = (p.spouses || []).map(sid => people[sid] ? { ...people[sid], id: people[sid].id || sid } : null).filter(Boolean);
+    return {
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p)
+    };
+  },
+
+  onRelationVisibilityToggle(e) {
+    const detail = (e && e.detail) || {};
+    const id = detail.id;
+    if (!id) return;
+    const db = JSON.parse(JSON.stringify(this.data.db || { activeRootId: null, people: {} }));
+    const hidden = Array.isArray(db.hiddenTreeIds) ? [...db.hiddenTreeIds] : [...(this.data.hiddenTreeIds || [])];
+    const index = hidden.indexOf(id);
+    if (index >= 0) hidden.splice(index, 1);
+    else hidden.push(id);
+    db.hiddenTreeIds = hidden.filter(hiddenId => db.people && db.people[hiddenId]);
+    this._layoutCache = { standard: null, timeline: null };
+    this._saveData(db);
+    this.setData({
+      db,
+      hiddenTreeIds: db.hiddenTreeIds
+    }, () => {
+      this.setData(this._profileRelationDisplayPatch(this.data.editingId), () => this.refreshTree());
+    });
   },
 
   _sameProgenitorHometownHint(personId, db) {
@@ -1497,8 +1582,58 @@ Page({
       .filter(Boolean);
   },
 
+  _getDuplicateInstances(id) {
+    if (!id) return [];
+    return (this.data.nodes || []).filter(node => node && node.id === id && node.isDuplicateInstance);
+  },
+
+  _getDuplicateJumpTarget(id, originRenderKey = '') {
+    const instances = this._getDuplicateInstances(id);
+    if (instances.length <= 1) return null;
+    const originIndex = instances.findIndex(node => node.renderKey === originRenderKey);
+    if (originIndex >= 0) return instances[(originIndex + 1) % instances.length];
+    return instances[0];
+  },
+
+  _flashDuplicateInstances(id, originRenderKey = '') {
+    if (!id) return;
+    if (this._duplicateFlashTimer) {
+      clearTimeout(this._duplicateFlashTimer);
+      this._duplicateFlashTimer = null;
+    }
+    const applyFlash = () => {
+      this.setData({
+        duplicateFlashId: id,
+        duplicateFlashOriginRenderKey: originRenderKey || ''
+      });
+      this._duplicateFlashTimer = setTimeout(() => {
+        this._duplicateFlashTimer = null;
+        this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' });
+      }, 900);
+    };
+    if (this.data.duplicateFlashId) {
+      this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' }, applyFlash);
+    } else {
+      applyFlash();
+    }
+  },
+
+  _handleDuplicateInstanceTap(id, originRenderKey = '') {
+    const target = this._getDuplicateJumpTarget(id, originRenderKey);
+    if (!target) return false;
+    this._flashDuplicateInstances(id, originRenderKey);
+    this._scrollToTreeNode(id, { renderKey: target.renderKey, vertical: true, screenTopRpx: 120 });
+    return true;
+  },
+
   onNodeTap(e) {
-    const id = e.id || e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = e.id || dataset.id;
+    const renderKey = dataset.renderKey || '';
+    const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
+    const hasRenderedTapOrigin = !!renderKey || isDuplicateTap;
+    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
+    if ((hasRenderedTapOrigin && this._handleDuplicateInstanceTap(id, renderKey)) || isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) return;
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -1519,7 +1654,7 @@ Page({
     
 
     // Get spouse objects
-    const spouseObjects = (p.spouses || []).map(sid => this.data.db.people[sid]).filter(Boolean);
+    const spouseObjects = (p.spouses || []).map(sid => this.data.db.people[sid] ? { ...this.data.db.people[sid], id: this.data.db.people[sid].id || sid } : null).filter(Boolean);
     const displayFather = (() => {
       const father = this._getFather(id, this.data.db);
       return father ? this._decorateProfilePerson(father) : null;
@@ -1604,6 +1739,9 @@ Page({
         this._scheduleScrollToTreeNode(id, {
           fallbackFirst: true,
           vertical: true,
+          includeParents: true,
+          horizontalAnchorId: this._getTreeJumpHorizontalAnchorId(id),
+          screenLeftRpx: 96,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
@@ -2770,6 +2908,9 @@ Page({
         this._scheduleScrollToTreeNode(id, {
           fallbackFirst: true,
           vertical: true,
+          includeParents: true,
+          horizontalAnchorId: this._getTreeJumpHorizontalAnchorId(id),
+          screenLeftRpx: 96,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
@@ -3201,7 +3342,10 @@ Page({
   // ─────────────────────────────────────────────
 
   onToggleCollapse(e) {
-    const id = e.currentTarget.dataset.id;
+    const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+    const id = dataset.id;
+    const renderKey = dataset.renderKey || '';
+    if (this._handleDuplicateInstanceTap(id, renderKey) || Number(dataset.duplicate || 0) === 1) return;
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
@@ -4961,8 +5105,8 @@ Page({
     return Number.isFinite(year) ? year : null;
   },
 
-  _getWorkspaceProfileYearRange(db = this.data.db) {
-    const currentWorkspaceId = this._getCurrentWorkspaceIdFromDb(db);
+  _getProfileYearRangeForIds(db = this.data.db, ids = []) {
+    const people = (db && db.people) || {};
     let minYear = Infinity;
     let maxYear = -Infinity;
     const addYear = (year) => {
@@ -4971,11 +5115,12 @@ Page({
       maxYear = Math.max(maxYear, year);
     };
 
-    Object.entries((db && db.people) || {}).forEach(([id, person]) => {
-      if (currentWorkspaceId && this._personWorkspaceId(person, id, db) !== currentWorkspaceId) return;
-      addYear(this._profileYearValue(person && (person.bYear || person.bDate)));
-      addYear(this._profileYearValue(person && (person.dYear || person.dDate)));
-      (Array.isArray(person && person.events) ? person.events : []).forEach(event => {
+    (ids || []).forEach(id => {
+      const person = people[id];
+      if (!person) return;
+      addYear(this._profileYearValue(person.bYear || person.bDate));
+      addYear(this._profileYearValue(person.dYear || person.dDate));
+      (Array.isArray(person.events) ? person.events : []).forEach(event => {
         (this._timelineEventYearRangesFromEvent(event || {}) || []).forEach(range => {
           addYear(parseInt(range.startYear, 10));
           addYear(parseInt(range.endYear, 10));
@@ -4987,9 +5132,22 @@ Page({
     return { minYear, maxYear };
   },
 
-  _defaultTimelineEventNearProfileDates(event, db = this.data.db) {
+  _getProfileYearRangeFromNodes(db = this.data.db, nodes = this.data.nodes) {
+    const ids = Array.from(new Set((nodes || []).map(node => node && node.id).filter(Boolean)));
+    return this._getProfileYearRangeForIds(db, ids);
+  },
+
+  _getWorkspaceProfileYearRange(db = this.data.db) {
+    const currentWorkspaceId = this._getCurrentWorkspaceIdFromDb(db);
+    const ids = Object.entries((db && db.people) || {})
+      .filter(([id, person]) => !currentWorkspaceId || this._personWorkspaceId(person, id, db) === currentWorkspaceId)
+      .map(([id]) => id);
+    return this._getProfileYearRangeForIds(db, ids);
+  },
+
+  _defaultTimelineEventNearProfileDates(event, db = this.data.db, profileRange = null) {
     const ranges = this._timelineEventYearRangesFromEvent(event || {});
-    const profileRange = this._getWorkspaceProfileYearRange(db);
+    profileRange = profileRange || this._getWorkspaceProfileYearRange(db);
     if (!ranges || !ranges.length || !profileRange) return false;
     const minYear = profileRange.minYear - DEFAULT_TIMELINE_EVENT_PROXIMITY_YEARS;
     const maxYear = profileRange.maxYear + DEFAULT_TIMELINE_EVENT_PROXIMITY_YEARS;
@@ -5001,10 +5159,10 @@ Page({
     });
   },
 
-  _shouldDisplayTimelineEventInLayout(event, db = this.data.db) {
+  _shouldDisplayTimelineEventInLayout(event, db = this.data.db, profileRange = null) {
     if (!this._isDefaultTimelineEvent(event)) return true;
     if (this._timelineEventChangedFromDefault(event)) return true;
-    return this._defaultTimelineEventNearProfileDates(event, db);
+    return this._defaultTimelineEventNearProfileDates(event, db, profileRange);
   },
 
   _timelineEventChangedFromDefault(event) {
@@ -5229,15 +5387,19 @@ Page({
     return String(event && event.year || '').trim();
   },
 
-  _buildTimelineEventRows(db = this.data.db) {
+  _buildTimelineEventRows(db = this.data.db, profileRange = null) {
     const events = this._getGlobalTimelineEvents(db);
-    const rows = events.map(event => ({
-      ...event,
-      yearLabel: this._formatTimelineEventYears(event),
-      checked: !event.hidden,
-      isDefault: this._isDefaultTimelineEvent(event),
-      tone: EventColors.resolveEventTone(event, 3)
-    }));
+    const rows = events.map(event => {
+      const inVisibleRange = this._shouldDisplayTimelineEventInLayout(event, db, profileRange);
+      return {
+        ...event,
+        yearLabel: this._formatTimelineEventYears(event),
+        checked: !event.hidden && inVisibleRange,
+        autoHiddenByProfileRange: !event.hidden && !inVisibleRange,
+        isDefault: this._isDefaultTimelineEvent(event),
+        tone: EventColors.resolveEventTone(event, 3)
+      };
+    });
     return this._withTimelineEventNameChipWidths(rows);
   },
 
@@ -5385,7 +5547,7 @@ Page({
     this.setData({
       db,
       showTimelineEventPanel: true,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, this.data.nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db),
       timelineEventEditingId: '',
       timelineEventEditingField: '',
@@ -5441,7 +5603,7 @@ Page({
     this._saveData(db);
     this.setData({
       db,
-      timelineEventRows: this._buildTimelineEventRows(db),
+      timelineEventRows: this._buildTimelineEventRows(db, this._getProfileYearRangeFromNodes(db, this.data.nodes)),
       timelinePersonalEventRows: this._buildPersonalEventRows(db)
     }, () => this.refreshTree());
   },
@@ -7289,24 +7451,61 @@ Page({
     });
   },
 
+  _drawMarriageIconFallback(ctx, x, y, filled = false, color = TREE_STYLE.iconBorderColor) {
+    const cx1 = x + 7;
+    const cx2 = x + 11;
+    const cy = y + 9;
+    const r = 5;
+    ctx.save();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    if (filled) {
+      const halfGap = (cx2 - cx1) / 2;
+      const midX = (cx1 + cx2) / 2;
+      const intersectionY = Math.sqrt(Math.max(0, r * r - halfGap * halfGap));
+      const theta = Math.atan2(intersectionY, halfGap);
+      ctx.beginPath();
+      ctx.moveTo(midX, cy - intersectionY);
+      ctx.arc(cx1, cy, r, -theta, theta, true);
+      ctx.arc(cx2, cy, r, Math.PI - theta, Math.PI + theta, false);
+      ctx.closePath();
+      ctx.moveTo(midX, cy - intersectionY);
+      ctx.arc(cx2, cy, r, Math.PI + theta, Math.PI - theta, false);
+      ctx.arc(cx1, cy, r, theta, -theta, true);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(cx1, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx2, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx1, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.arc(cx2, cy, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  },
+
   _drawScreenshotIcon(ctx, nodeOrType, x, y, color) {
     const style = TREE_STYLE;
     const node = typeof nodeOrType === 'object' ? nodeOrType : null;
     const type = node ? node.iconType : nodeOrType;
     const iconSrc = node ? node.iconSrc : getTreeIconSrc(type, '');
     const iconColor = color || style.iconBorderColor;
-    if (type === 'marriage') {
-      ctx.fillStyle = iconColor;
-      ctx.font = '28px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('⚭', x - 2, y - 4);
-      return;
-    }
-
     const iconImage = iconSrc && this._screenshotTreeIconImages && this._screenshotTreeIconImages[iconSrc];
     if (iconImage) {
       ctx.drawImage(iconImage, x, y, style.iconSize, style.iconSize);
+      return;
+    }
+
+    if (type === 'marriage' || type === 'marriageCollapsed') {
+      this._drawMarriageIconFallback(ctx, x, y, type === 'marriageCollapsed', iconColor);
       return;
     }
 
