@@ -2005,12 +2005,25 @@ text, view, button, input { font-weight: normal !important; }
 }
 
 .node.duplicate-placeholder { animation: duplicateNodeEnter 180ms ease-out; }
-.node.duplicate-placeholder .node-inner {
+.node.duplicate-instance .node-inner {
   box-shadow:
-    0 0 0 4rpx rgba(80,137,128,0.20),
+    0 0 0 4rpx rgba(80,137,128,0.22),
     0 0 20rpx 6rpx rgba(80,137,128,0.16);
+}
+.node.duplicate-flash .node-inner {
+  animation: duplicateNodeFlash 900ms ease-out;
+  box-shadow:
+    0 0 0 6rpx rgba(80,137,128,0.34),
+    0 0 30rpx 10rpx rgba(80,137,128,0.24);
 }
 @keyframes duplicateNodeEnter {
   from { transform: translateY(6rpx); }
   to { transform: translateY(0); }
+}
+@keyframes duplicateNodeFlash {
+  0% { transform: scale(1); }
+  18% { transform: scale(1.045); }
+  36% { transform: scale(1); }
+  54% { transform: scale(1.035); }
+  100% { transform: scale(1); }
 }

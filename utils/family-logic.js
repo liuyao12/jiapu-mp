@@ -898,6 +898,8 @@ function assignTimelineEventLabelLanes(events, startYear) {
 
 function calculateLayout(db, config) {
   const { rootId, showTimeline, showSpouses, showMaternal, collapsedNodes } = config;
+  const hiddenTreeIds = new Set(Array.isArray(config.hiddenTreeIds) ? config.hiddenTreeIds : []);
+  const isHiddenInTree = id => hiddenTreeIds.has(id);
   const timelineEvents = Array.isArray(config.timelineEvents) ? config.timelineEvents : [];
   const nodes = [], lines = [], rulerTicks = [], timelineEventBands = [];
   let maxR = 0, minY = 2026, maxD = 1, maxRow = 0;
@@ -1232,9 +1234,10 @@ function calculateLayout(db, config) {
 
     if (p.gender === 'male') {
       const childLineage = lineage === 'affinal' ? 'affinal' : 'patrilineal';
-      (p.children || []).forEach(cid => addKid(cid, childLineage));
+      (p.children || []).forEach(cid => { if (!isHiddenInTree(cid)) addKid(cid, childLineage); });
     } else if (p.gender === 'female' && showMaternal && p.spouses && p.spouses.length > 0) {
       p.spouses.forEach(sid => {
+        if (isHiddenInTree(sid)) return;
         const spouse = db.people[sid];
         if (spouse && spouse.children && spouse.children.length > 0) {
           spouse.children.forEach(cid => {
@@ -1254,6 +1257,7 @@ function calculateLayout(db, config) {
 
     const seen = new Set();
     return p.spouses
+      .filter(sid => !isHiddenInTree(sid))
       .map(sid => {
         const spouse = db.people[sid];
         const kidEntries = [];
@@ -1284,7 +1288,7 @@ function calculateLayout(db, config) {
     maxR = Math.max(maxR, startX + (displayName.length * 30) + 350);
     const isCollapsedForLayout = (collapsedNodes || []).includes(id);
     if (!isCollapsedForLayout) {
-      const sIds = (showSpouses && p.spouses) ? p.spouses : [];
+      const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid)) : [];
       if (sIds.length) {
         sIds.forEach(sid => {
           const s = db.people[sid]; if (s) {
@@ -1364,7 +1368,7 @@ function calculateLayout(db, config) {
     
     const kidEntries = getRenderableKidEntries(id, lineage);
     const kids = kidEntries.map(entry => entry.id);
-    const sIds = (showSpouses && p.spouses) ? p.spouses : [];
+    const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid)) : [];
     const maternalSpouseKidGroups = getMaternalSpouseKidGroups(id, lineage);
     const groupMaternalKidsBySpouse = maternalSpouseKidGroups.length > 0;
     const hasExpandableItems = kids.length > 0 || sIds.length > 0;

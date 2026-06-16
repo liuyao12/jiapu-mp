@@ -97,7 +97,7 @@ Page({
     treeTopGap: TREE_STYLE.timelineBaseTopGap,
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
-    collapsedNodes: [], showDrawer: false,
+    collapsedNodes: [], hiddenTreeIds: [], showDrawer: false,
     showEmptyTree: false,
     showTreeArea: false,
     editingId: '',
@@ -155,7 +155,9 @@ Page({
     screenshotPreviewImagePath: '',
     screenshotPreviewImageWidth: 0,
     screenshotPreviewImageHeight: 0,
-    screenshotPreviewDrawerY: 0
+    screenshotPreviewDrawerY: 0,
+    duplicateFlashId: '',
+    duplicateFlashOriginRenderKey: ''
   },
 
   // Non-reactive state cached here (not in this.data to avoid setData overhead)
@@ -166,6 +168,7 @@ Page({
   _windowHeight: 667,
   _scrollLeftPx: 0,
   _scrollTopPx: 0,
+  _duplicateFlashTimer: null,
 
   // ─────────────────────────────────────────────
   // Lifecycle
@@ -862,7 +865,8 @@ Page({
         rootId: db.activeRootId,
         showSpouses,
         showMaternal,
-        collapsedNodes: nextCollapsedNodes
+        collapsedNodes: nextCollapsedNodes,
+        hiddenTreeIds: db.hiddenTreeIds || []
       };
       const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
       const visibleProfileRange = this._getProfileYearRangeFromNodes(db, standard.nodes || []);
@@ -976,6 +980,10 @@ Page({
   },
 
   _decorateTreeNodes(nodes) {
+    const idCounts = (nodes || []).reduce((counts, node) => {
+      if (node && node.id) counts[node.id] = (counts[node.id] || 0) + 1;
+      return counts;
+    }, {});
     return (nodes || []).map(node => {
       const nodeFillColor = node.gender === 'male'
         ? TREE_STYLE.maleFill
@@ -1007,6 +1015,7 @@ Page({
         ...node,
         iconColor: node.iconType === 'marriage' ? this._getLineageToneColor(node.lineage) : TREE_STYLE.iconBorderColor,
         iconSrc: getTreeIconSrc(node.iconType, node.lineage),
+        isDuplicateInstance: !!(node.id && idCounts[node.id] > 1),
         nodeFillColor,
         nodeBorderColor,
         labelNudgeX,
@@ -1245,7 +1254,9 @@ Page({
     const nodes = this.data.nodes || [];
     if (!nodes.length) return;
 
-    let node = id ? nodes.find(item => item.id === id) : null;
+    let node = options.renderKey
+      ? nodes.find(item => item.renderKey === options.renderKey)
+      : (id ? nodes.find(item => item.id === id) : null);
     if (!node && options.fallbackFirst) {
       node = nodes.find(item => !item.isSpouse) || nodes[0];
     }
@@ -1445,8 +1456,47 @@ Page({
     const p = this._withEditableNameParts(person);
     p._displayName = this._computeDisplayName(p);
     p._displayYear = p.bYear || '';
+    p._treeHidden = this._isTreeIdHidden(p.id);
     p._otherTree = this._isOutsideCurrentProgenitor(p);
     return p;
+  },
+
+  _isTreeIdHidden(id) {
+    if (!id) return false;
+    const dbHidden = this.data.db && Array.isArray(this.data.db.hiddenTreeIds) ? this.data.db.hiddenTreeIds : null;
+    const hidden = dbHidden || this.data.hiddenTreeIds || [];
+    return hidden.includes(id);
+  },
+
+  _profileRelationDisplayPatch(id = this.data.editingId) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const p = id && people[id];
+    if (!p) return {};
+    const spouseObjects = (p.spouses || []).map(sid => people[sid] ? { ...people[sid], id: people[sid].id || sid } : null).filter(Boolean);
+    return {
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p)
+    };
+  },
+
+  onRelationVisibilityToggle(e) {
+    const detail = (e && e.detail) || {};
+    const id = detail.id;
+    if (!id) return;
+    const db = JSON.parse(JSON.stringify(this.data.db || { activeRootId: null, people: {} }));
+    const hidden = Array.isArray(db.hiddenTreeIds) ? [...db.hiddenTreeIds] : [...(this.data.hiddenTreeIds || [])];
+    const index = hidden.indexOf(id);
+    if (index >= 0) hidden.splice(index, 1);
+    else hidden.push(id);
+    db.hiddenTreeIds = hidden.filter(hiddenId => db.people && db.people[hiddenId]);
+    this._layoutCache = { standard: null, timeline: null };
+    this._saveData(db);
+    this.setData({
+      db,
+      hiddenTreeIds: db.hiddenTreeIds
+    }, () => {
+      this.setData(this._profileRelationDisplayPatch(this.data.editingId), () => this.refreshTree());
+    });
   },
 
   _sameProgenitorHometownHint(personId, db) {
@@ -1532,15 +1582,58 @@ Page({
       .filter(Boolean);
   },
 
+  _getDuplicateInstances(id) {
+    if (!id) return [];
+    return (this.data.nodes || []).filter(node => node && node.id === id && node.isDuplicateInstance);
+  },
+
+  _getDuplicateJumpTarget(id, originRenderKey = '') {
+    const instances = this._getDuplicateInstances(id);
+    if (instances.length <= 1) return null;
+    const originIndex = instances.findIndex(node => node.renderKey === originRenderKey);
+    if (originIndex >= 0) return instances[(originIndex + 1) % instances.length];
+    return instances[0];
+  },
+
+  _flashDuplicateInstances(id, originRenderKey = '') {
+    if (!id) return;
+    if (this._duplicateFlashTimer) {
+      clearTimeout(this._duplicateFlashTimer);
+      this._duplicateFlashTimer = null;
+    }
+    const applyFlash = () => {
+      this.setData({
+        duplicateFlashId: id,
+        duplicateFlashOriginRenderKey: originRenderKey || ''
+      });
+      this._duplicateFlashTimer = setTimeout(() => {
+        this._duplicateFlashTimer = null;
+        this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' });
+      }, 900);
+    };
+    if (this.data.duplicateFlashId) {
+      this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' }, applyFlash);
+    } else {
+      applyFlash();
+    }
+  },
+
+  _handleDuplicateInstanceTap(id, originRenderKey = '') {
+    const target = this._getDuplicateJumpTarget(id, originRenderKey);
+    if (!target) return false;
+    this._flashDuplicateInstances(id, originRenderKey);
+    this._scrollToTreeNode(id, { renderKey: target.renderKey, vertical: true, screenTopRpx: 120 });
+    return true;
+  },
+
   onNodeTap(e) {
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = e.id || dataset.id;
+    const renderKey = dataset.renderKey || '';
     const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
-    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === dataset.renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
-    if (isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) {
-      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
-      return;
-    }
+    const hasRenderedTapOrigin = !!renderKey || isDuplicateTap;
+    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
+    if ((hasRenderedTapOrigin && this._handleDuplicateInstanceTap(id, renderKey)) || isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) return;
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -1561,7 +1654,7 @@ Page({
     
 
     // Get spouse objects
-    const spouseObjects = (p.spouses || []).map(sid => this.data.db.people[sid]).filter(Boolean);
+    const spouseObjects = (p.spouses || []).map(sid => this.data.db.people[sid] ? { ...this.data.db.people[sid], id: this.data.db.people[sid].id || sid } : null).filter(Boolean);
     const displayFather = (() => {
       const father = this._getFather(id, this.data.db);
       return father ? this._decorateProfilePerson(father) : null;
@@ -3251,10 +3344,8 @@ Page({
   onToggleCollapse(e) {
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = dataset.id;
-    if (Number(dataset.duplicate || 0) === 1) {
-      this._scrollToTreeNode(id, { vertical: true, screenTopRpx: 120 });
-      return;
-    }
+    const renderKey = dataset.renderKey || '';
+    if (this._handleDuplicateInstanceTap(id, renderKey) || Number(dataset.duplicate || 0) === 1) return;
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
