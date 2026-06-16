@@ -1455,7 +1455,7 @@ function calculateLayout(db, config) {
         const childXBase = getChildTrunkX(spouseKids, parentIconX);
         const stemStartMidY = midY;
         const connectorLineage = spouseKidEntries.every(entry => entry.lineage === 'patrilineal') ? 'patrilineal' : 'affinal';
-        if (showTimeline) {
+        if (showTimeline && !(connectorLineage === 'affinal' && childXBase < parentIconX)) {
           lines.push({ type: 'branch', lineage: connectorLineage, x: Math.min(parentIconX, childXBase), y: stemStartMidY, w: Math.abs(childXBase - parentIconX) });
         }
 

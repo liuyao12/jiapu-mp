@@ -95,7 +95,23 @@ const SOONG_IDS = {
   zian: `${SOONG_FAMILY_ROOT_ID}F`,
   kong: 'soo_kong_001-',
   sun: 'soo_sun_001-',
-  chiang: 'soo_chi_001-'
+  chiang: 'soo_chi_001-',
+  kongLingyi: 'soo_kong_001-A',
+  kongLingkan: 'soo_kong_001-B',
+  kongLingwei: 'soo_kong_001-C',
+  kongLingjie: 'soo_kong_001-D',
+  sunKe: 'soo_sun_001-A',
+  sunYan: 'soo_sun_001-B',
+  sunWan: 'soo_sun_001-C',
+  sunZhiqiang: 'soo_sun_001-AA',
+  sunZhihong: 'soo_sun_001-AB',
+  chiangChingKuo: 'soo_chi_001-A',
+  chiangWeiKuo: 'soo_chi_001-B',
+  chiangHsiaoWen: 'soo_chi_001-AA',
+  chiangHsiaoChang: 'soo_chi_001-AB',
+  chiangHsiaoWu: 'soo_chi_001-AC',
+  chiangHsiaoYung: 'soo_chi_001-AD',
+  johnChiang: 'soo_chi_001-BA'
 };
 
 function soongPerson(id, data) {
@@ -108,15 +124,11 @@ const soongPeople = {
     surname: '宋',
     firstname: '嘉树',
     alias: '耀如',
-    hometown: '海南文昌',
+    hometown: '广东文昌',
     bYear: '1864',
     dYear: '1918',
     children: [SOONG_IDS.ailing, SOONG_IDS.qingling, SOONG_IDS.ziwen, SOONG_IDS.meiling, SOONG_IDS.ziliang, SOONG_IDS.zian],
-    spouses: [SOONG_IDS.ni],
-    events: [
-      eventWithYear('soong_charlie_america', '赴美求学', '1878'),
-      eventWithYear('soong_charlie_revolution', '支持孙中山革命', '1894-1918')
-    ]
+    spouses: [SOONG_IDS.ni]
   }),
   [SOONG_IDS.ni]: soongPerson(SOONG_IDS.ni, {
     name: '倪桂珍',
@@ -137,8 +149,7 @@ const soongPeople = {
     bYear: '1889',
     dYear: '1973',
     motherId: SOONG_IDS.ni,
-    spouses: [SOONG_IDS.kong],
-    events: [eventWithYear('soong_ailing_marriage', '婚嫁', '1914')]
+    spouses: [SOONG_IDS.kong]
   }),
   [SOONG_IDS.qingling]: soongPerson(SOONG_IDS.qingling, {
     name: '宋庆龄',
@@ -149,11 +160,7 @@ const soongPeople = {
     bYear: '1893',
     dYear: '1981',
     motherId: SOONG_IDS.ni,
-    spouses: [SOONG_IDS.sun],
-    events: [
-      eventWithYear('soong_qingling_marriage', '婚嫁', '1915'),
-      eventWithYear('soong_qingling_honorary_president', '中华人民共和国名誉主席', '1981')
-    ]
+    spouses: [SOONG_IDS.sun]
   }),
   [SOONG_IDS.ziwen]: soongPerson(SOONG_IDS.ziwen, {
     name: '宋子文',
@@ -162,8 +169,7 @@ const soongPeople = {
     rank: '三',
     bYear: '1894',
     dYear: '1971',
-    motherId: SOONG_IDS.ni,
-    events: [eventWithYear('soong_ziwen_minister', '财政部长、外交部长', '1928-1945')]
+    motherId: SOONG_IDS.ni
   }),
   [SOONG_IDS.meiling]: soongPerson(SOONG_IDS.meiling, {
     name: '宋美龄',
@@ -174,8 +180,7 @@ const soongPeople = {
     bYear: '1898',
     dYear: '2003',
     motherId: SOONG_IDS.ni,
-    spouses: [SOONG_IDS.chiang],
-    events: [eventWithYear('soong_meiling_marriage', '婚嫁', '1927')]
+    spouses: [SOONG_IDS.chiang]
   }),
   [SOONG_IDS.ziliang]: soongPerson(SOONG_IDS.ziliang, {
     name: '宋子良',
@@ -200,9 +205,11 @@ const soongPeople = {
     surname: '孔',
     firstname: '祥熙',
     gender: 'male',
+    hometown: '山西太谷',
     bYear: '1880',
     dYear: '1967',
-    spouses: [SOONG_IDS.ailing]
+    spouses: [SOONG_IDS.ailing],
+    children: [SOONG_IDS.kongLingyi, SOONG_IDS.kongLingkan, SOONG_IDS.kongLingwei, SOONG_IDS.kongLingjie]
   }),
   [SOONG_IDS.sun]: soongPerson(SOONG_IDS.sun, {
     name: '孙中山',
@@ -210,24 +217,81 @@ const soongPeople = {
     firstname: '中山',
     alias: '逸仙',
     gender: 'male',
+    hometown: '广东香山',
     bYear: '1866',
     dYear: '1925',
-    spouses: [SOONG_IDS.qingling]
+    spouses: [SOONG_IDS.qingling],
+    children: [SOONG_IDS.sunKe, SOONG_IDS.sunYan, SOONG_IDS.sunWan],
+    events: [eventWithYear('soong_sun_president', '总统', '1912')]
   }),
   [SOONG_IDS.chiang]: soongPerson(SOONG_IDS.chiang, {
     name: '蒋介石',
     surname: '蒋',
     firstname: '介石',
     gender: 'male',
+    hometown: '浙江奉化',
     bYear: '1887',
     dYear: '1975',
-    spouses: [SOONG_IDS.meiling]
+    spouses: [SOONG_IDS.meiling],
+    children: [SOONG_IDS.chiangChingKuo, SOONG_IDS.chiangWeiKuo],
+    events: [eventWithYear('soong_chiang_power', '掌权', '1927-1975')]
+  }),
+  [SOONG_IDS.kongLingyi]: soongPerson(SOONG_IDS.kongLingyi, {
+    name: '孔令仪', surname: '孔', firstname: '令仪', gender: 'female', rank: '一', bYear: '1915', dYear: '2008', motherId: SOONG_IDS.ailing
+  }),
+  [SOONG_IDS.kongLingkan]: soongPerson(SOONG_IDS.kongLingkan, {
+    name: '孔令侃', surname: '孔', firstname: '令侃', rank: '二', bYear: '1916', dYear: '1992', motherId: SOONG_IDS.ailing
+  }),
+  [SOONG_IDS.kongLingwei]: soongPerson(SOONG_IDS.kongLingwei, {
+    name: '孔令伟', surname: '孔', firstname: '令伟', gender: 'female', rank: '三', bYear: '1919', dYear: '1994', motherId: SOONG_IDS.ailing
+  }),
+  [SOONG_IDS.kongLingjie]: soongPerson(SOONG_IDS.kongLingjie, {
+    name: '孔令杰', surname: '孔', firstname: '令杰', rank: '四', bYear: '1921', dYear: '1996', motherId: SOONG_IDS.ailing
+  }),
+  [SOONG_IDS.sunKe]: soongPerson(SOONG_IDS.sunKe, {
+    name: '孙科', surname: '孙', firstname: '科', rank: '一', bYear: '1891', dYear: '1973', children: [SOONG_IDS.sunZhiqiang, SOONG_IDS.sunZhihong]
+  }),
+  [SOONG_IDS.sunYan]: soongPerson(SOONG_IDS.sunYan, {
+    name: '孙娫', surname: '孙', firstname: '娫', gender: 'female', rank: '二', bYear: '1894', dYear: '1913'
+  }),
+  [SOONG_IDS.sunWan]: soongPerson(SOONG_IDS.sunWan, {
+    name: '孙婉', surname: '孙', firstname: '婉', gender: 'female', rank: '三', bYear: '1896', dYear: '1979'
+  }),
+  [SOONG_IDS.sunZhiqiang]: soongPerson(SOONG_IDS.sunZhiqiang, {
+    name: '孙治强', surname: '孙', firstname: '治强', rank: '一', bYear: '1915', dYear: '2001'
+  }),
+  [SOONG_IDS.sunZhihong]: soongPerson(SOONG_IDS.sunZhihong, {
+    name: '孙治宏', surname: '孙', firstname: '治宏', rank: '二', bYear: '1917', dYear: '2008'
+  }),
+  [SOONG_IDS.chiangChingKuo]: soongPerson(SOONG_IDS.chiangChingKuo, {
+    name: '蒋经国', surname: '蒋', firstname: '经国', rank: '一', bYear: '1910', dYear: '1988', children: [SOONG_IDS.chiangHsiaoWen, SOONG_IDS.chiangHsiaoChang, SOONG_IDS.chiangHsiaoWu, SOONG_IDS.chiangHsiaoYung],
+    events: [eventWithYear('soong_chingkuo_president', '总统', '1978-1988')]
+  }),
+  [SOONG_IDS.chiangWeiKuo]: soongPerson(SOONG_IDS.chiangWeiKuo, {
+    name: '蒋纬国', surname: '蒋', firstname: '纬国', rank: '二', bYear: '1916', dYear: '1997', children: [SOONG_IDS.johnChiang]
+  }),
+  [SOONG_IDS.chiangHsiaoWen]: soongPerson(SOONG_IDS.chiangHsiaoWen, {
+    name: '蒋孝文', surname: '蒋', firstname: '孝文', rank: '一', bYear: '1935', dYear: '1989'
+  }),
+  [SOONG_IDS.chiangHsiaoChang]: soongPerson(SOONG_IDS.chiangHsiaoChang, {
+    name: '蒋孝章', surname: '蒋', firstname: '孝章', gender: 'female', rank: '二', bYear: '1936'
+  }),
+  [SOONG_IDS.chiangHsiaoWu]: soongPerson(SOONG_IDS.chiangHsiaoWu, {
+    name: '蒋孝武', surname: '蒋', firstname: '孝武', rank: '三', bYear: '1945', dYear: '1991'
+  }),
+  [SOONG_IDS.chiangHsiaoYung]: soongPerson(SOONG_IDS.chiangHsiaoYung, {
+    name: '蒋孝勇', surname: '蒋', firstname: '孝勇', rank: '四', bYear: '1948', dYear: '1996'
+  }),
+  [SOONG_IDS.johnChiang]: soongPerson(SOONG_IDS.johnChiang, {
+    name: '蒋友柏', surname: '蒋', firstname: '友柏', rank: '一', bYear: '1976', isLiving: true
   })
 };
 
 const soongTimelineEvents = [
   { id: 'soong_xinhai', name: '辛亥革命', year: '1911', workspaceId: SOONG_FAMILY_WORKSPACE_ID },
-  { id: 'soong_republic', name: '中华民国', year: '1912-1949', workspaceId: SOONG_FAMILY_WORKSPACE_ID }
+  { id: 'soong_northern_expedition', name: '北伐', year: '1926-1928', workspaceId: SOONG_FAMILY_WORKSPACE_ID },
+  { id: 'soong_japanese_invasion', name: '日军侵华', year: '1931-1945', workspaceId: SOONG_FAMILY_WORKSPACE_ID },
+  { id: 'soong_1949', name: '1949', year: '1949', workspaceId: SOONG_FAMILY_WORKSPACE_ID }
 ];
 
 
@@ -1102,7 +1166,7 @@ const BUNDLED_SAMPLES = [
     rootId: SOONG_FAMILY_ROOT_ID,
     version: SOONG_FAMILY_SAMPLE_VERSION,
     createWorkspace: createSoongFamilyWorkspace,
-    viewOptions: { showSpouses: true, showTimeline: true }
+    viewOptions: { showSpouses: true, showMaternal: true, showTimeline: true }
   }
 ];
 

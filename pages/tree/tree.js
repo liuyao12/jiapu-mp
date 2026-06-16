@@ -11,12 +11,16 @@ const TREE_ICON_SRC = {
   patrilineal: {
     plus: '/assets/tree-icon-plus.png',
     minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png'
+    leaf: '/assets/tree-icon-leaf.png',
+    marriage: '/assets/tree-icon-link.png',
+    marriageCollapsed: '/assets/tree-icon-link-filled.png'
   },
   affinal: {
     plus: '/assets/tree-icon-plus.png',
     minus: '/assets/tree-icon-minus.png',
-    leaf: '/assets/tree-icon-leaf.png'
+    leaf: '/assets/tree-icon-leaf.png',
+    marriage: '/assets/tree-icon-link.png',
+    marriageCollapsed: '/assets/tree-icon-link-filled.png'
   }
 };
 const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
@@ -25,7 +29,7 @@ const TREE_ICON_IMAGE_SOURCES = Array.from(new Set([
 ]));
 
 function getTreeIconSrc(iconType, lineage) {
-  if (!iconType || iconType === 'marriage' || iconType === 'marriageCollapsed') return '';
+  if (!iconType) return '';
   const palette = lineage === 'affinal' ? TREE_ICON_SRC.affinal : TREE_ICON_SRC.patrilineal;
   return palette[iconType] || '';
 }
@@ -1221,6 +1225,12 @@ Page({
       currentId = this._getFatherId(currentId);
     }
     const focusDescendants = this._collectFocusedDescendantIds(people, focusId);
+    const spouseIds = new Set();
+    Object.values(people).forEach(person => {
+      (Array.isArray(person && person.spouses) ? person.spouses : []).forEach(spouseId => {
+        if (people[spouseId]) spouseIds.add(spouseId);
+      });
+    });
 
     const hasFocusedExpandableBranch = (id) => {
       const person = people[id];
@@ -1237,6 +1247,7 @@ Page({
 
     return Object.keys(people).filter(id => {
       if (!hasFocusedExpandableBranch(id)) return false;
+      if (spouseIds.has(id)) return false;
       if (focusAncestors.has(id)) return false;
       if (focusDescendants.has(id)) return false;
       return true;
@@ -1256,22 +1267,16 @@ Page({
     const viewportRpx = this._treeViewportWidthRpx();
     const nodeLeftRpx = (node.x || 0) + 40;
     const nodeCenterRpx = (node.x || 0) + 40 + Math.min(node.w || 80, 260) / 2;
-    const parentNodes = options.includeParents
-      ? this._getTreeNodeParentIds(id)
-        .map(parentId => nodes.find(item => item.id === parentId))
-        .filter(Boolean)
-      : [];
+    const horizontalAnchorNode = options.horizontalAnchorId
+      ? nodes.find(item => item.id === options.horizontalAnchorId)
+      : null;
+    const horizontalNode = horizontalAnchorNode || node;
+    const horizontalLeftRpx = (horizontalNode.x || 0) + 40;
+    const horizontalCenterRpx = horizontalLeftRpx + Math.min(horizontalNode.w || 80, 260) / 2;
     const maxScrollRpx = Math.max(0, (this.data.maxR || 750) - viewportRpx);
-    let rawTargetRpx = Number.isFinite(options.screenLeftRpx)
-      ? nodeLeftRpx - options.screenLeftRpx
-      : nodeCenterRpx - (Number.isFinite(options.screenCenterRpx) ? options.screenCenterRpx : viewportRpx / 2);
-    if (options.includeParents && parentNodes.length > 0) {
-      const familyNodes = [node, ...parentNodes];
-      const familyLeftRpx = Math.min(...familyNodes.map(item => (item.x || 0) + 40));
-      const familyRightRpx = Math.max(...familyNodes.map(item => (item.x || 0) + 40 + Math.min(item.w || 80, 260)));
-      const familyCenterRpx = (familyLeftRpx + familyRightRpx) / 2;
-      rawTargetRpx = familyCenterRpx - viewportRpx / 2;
-    }
+    const rawTargetRpx = Number.isFinite(options.screenLeftRpx)
+      ? horizontalLeftRpx - options.screenLeftRpx
+      : horizontalCenterRpx - (Number.isFinite(options.screenCenterRpx) ? options.screenCenterRpx : viewportRpx / 2);
     const targetRpx = Math.max(0, Math.min(maxScrollRpx, rawTargetRpx));
     const targetPx = Math.round(this._rpxToPx(targetRpx));
 
@@ -1308,6 +1313,14 @@ Page({
     if (fatherId && people[fatherId]) parentIds.push(fatherId);
     if (person.motherId && people[person.motherId]) parentIds.push(person.motherId);
     return parentIds;
+  },
+
+  _getTreeJumpHorizontalAnchorId(id) {
+    const people = (this.data.db && this.data.db.people) || {};
+    const fatherId = this._getFatherId(id);
+    if (fatherId && people[fatherId]) return fatherId;
+    const parentIds = this._getTreeNodeParentIds(id);
+    return parentIds[0] || id;
   },
 
   _rootSwitchScrollPatch() {
@@ -1647,7 +1660,8 @@ Page({
           fallbackFirst: true,
           vertical: true,
           includeParents: true,
-          screenLeftRpx: 220,
+          horizontalAnchorId: this._getTreeJumpHorizontalAnchorId(id),
+          screenLeftRpx: 96,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
@@ -2815,7 +2829,8 @@ Page({
           fallbackFirst: true,
           vertical: true,
           includeParents: true,
-          screenLeftRpx: 220,
+          horizontalAnchorId: this._getTreeJumpHorizontalAnchorId(id),
+          screenLeftRpx: 96,
           screenCenterYRpx: this._treeViewportHeightRpx() / 2
         });
       });
@@ -7364,18 +7379,18 @@ Page({
     const type = node ? node.iconType : nodeOrType;
     const iconSrc = node ? node.iconSrc : getTreeIconSrc(type, '');
     const iconColor = color || style.iconBorderColor;
+    const iconImage = iconSrc && this._screenshotTreeIconImages && this._screenshotTreeIconImages[iconSrc];
+    if (iconImage) {
+      ctx.drawImage(iconImage, x, y, style.iconSize, style.iconSize);
+      return;
+    }
+
     if (type === 'marriage' || type === 'marriageCollapsed') {
       ctx.fillStyle = iconColor;
       ctx.font = '28px sans-serif';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
       ctx.fillText('⚭', x - 2, y - 4);
-      return;
-    }
-
-    const iconImage = iconSrc && this._screenshotTreeIconImages && this._screenshotTreeIconImages[iconSrc];
-    if (iconImage) {
-      ctx.drawImage(iconImage, x, y, style.iconSize, style.iconSize);
       return;
     }
 
