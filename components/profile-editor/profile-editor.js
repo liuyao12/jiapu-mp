@@ -1422,6 +1422,9 @@ Component({
     onExitEdit() {
       const creatingProfile = this.properties.creatingProfile === true;
       const nextSections = this._sectionState(creatingProfile, false, creatingProfile);
+      if (this.data.showPersonalEventEditor || this.data.showPersonalEventDraft) {
+        this._finishPersonalEventEditing();
+      }
       this._setDrawerInternalState({
         editGender: false,
         showGenderDisplay: true,
@@ -1562,7 +1565,8 @@ Component({
     onShowPersonalEventDraft() {
       this.setData({
         showPersonalEventDraft: true,
-        showPersonalEventEditor: true
+        showPersonalEventEditor: true,
+        drawerY: 0
       });
     },
 
@@ -1581,19 +1585,21 @@ Component({
     onEditPersonalEvents() {
       this.setData({
         showPersonalEventEditor: true,
-        showPersonalEventDraft: false
+        showPersonalEventDraft: false,
+        drawerY: 0
       });
     },
 
-    _commitPersonalEventDraft() {
+    _commitPersonalEventDraft(options = {}) {
+      const silent = options.silent === true;
       const name = String(this.data.personalEventDraftName || '').trim();
       const ranges = this._parsePersonalEventYearRanges(this.data.personalEventDraftYear);
       if (!name) {
-        wx.showToast({ title: '请填写事件名', icon: 'none' });
+        if (!silent) wx.showToast({ title: '请填写事件名', icon: 'none' });
         return false;
       }
       if (!ranges || !ranges.length) {
-        wx.showToast({ title: '请填写年份', icon: 'none' });
+        if (!silent) wx.showToast({ title: '请填写年份', icon: 'none' });
         return false;
       }
       const yearLabel = this._formatPersonalEventYearRanges(ranges);
@@ -1615,6 +1621,23 @@ Component({
         showPersonalEventEditor: false
       });
       return true;
+    },
+
+    _finishPersonalEventEditing() {
+      const hasDraft = !!(
+        String(this.data.personalEventDraftName || '').trim()
+        || String(this.data.personalEventDraftYear || '').trim()
+      );
+      if (hasDraft && this._commitPersonalEventDraft({ silent: true })) return;
+      this.setData({
+        personalEventDraftName: '',
+        personalEventDraftYear: '',
+        personalEventDraftTone: 0,
+        ...this._personalEventDraftWidthPatch('', ''),
+        showPersonalEventDraft: false,
+        showPersonalEventEditor: false,
+        saveButtonClass: this.data.hasChanges ? 'save-btn-main active' : 'save-btn-main disabled'
+      });
     },
 
     onAddPersonalEvent() {

@@ -405,6 +405,7 @@ view, text, input {
 /* Relationships Grid */
 .rel-view-grid { display: flex; flex-direction: row; gap: 20rpx; margin-top: 15rpx; padding-bottom: 150rpx; }
 .rel-view-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.birth-mother-picker { display: block; width: 100%; background: #fff !important; color: #000 !important; }
 .rel-card { margin-bottom: 8rpx; padding: 0 14rpx; border-radius: 8rpx; display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; border: 1rpx solid rgba(0,0,0,0.05); height: 52rpx; width: 100%; }
 .rel-card.male { background: #bbdefb; border-color: rgba(0,0,0,0.05); }
 .rel-card.female { background: #fce4ec; border-color: rgba(0,0,0,0.05); }
@@ -735,23 +736,23 @@ view, text, input {
   flex: 0 0 auto;
   min-width: 0;
   max-width: none;
-  height: 42rpx;
+  height: 44rpx;
   display: flex;
   align-items: center;
   border: 1rpx solid transparent;
   border-radius: 999rpx;
-  overflow: visible;
+  overflow: hidden;
   background: #fff;
   box-sizing: border-box;
 }
 .personal-event-edit-input {
-  height: 42rpx;
-  min-height: 42rpx;
-  line-height: 42rpx;
+  height: 44rpx;
+  min-height: 44rpx;
+  line-height: 44rpx;
   border: none;
-  padding: 0 10rpx;
+  padding: 0 11rpx;
   box-sizing: border-box;
-  font-size: 21rpx;
+  font-size: 22rpx;
 }
 .personal-event-edit-input.name {
   flex: 0 0 auto;
@@ -798,9 +799,9 @@ view, text, input {
 .personal-event-draft-placeholder-name { color: rgba(255,255,255,0.72); }
 .personal-event-draft-placeholder-year { color: rgba(198, 40, 40, 0.50); }
 .personal-event-delete {
-  width: 42rpx;
-  height: 42rpx;
-  line-height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 42rpx;
   text-align: center;
   color: #999;
   border: 1rpx solid #ddd;
@@ -810,9 +811,9 @@ view, text, input {
   flex: 0 0 auto;
 }
 .personal-event-cancel {
-  width: 42rpx;
-  height: 42rpx;
-  line-height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 42rpx;
   text-align: center;
   color: #999;
   border: 1rpx solid #ddd;

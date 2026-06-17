@@ -1061,6 +1061,8 @@ function calculateLayout(db, config) {
     return Math.min(rawBirthYear + 80, CURRENT_YEAR);
   };
 
+  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+
   const getFadeStartPercent = (p, bYear) => {
     if (!showTimeline || isLivingPerson(p) || (p && p.dYear) || hasEstimatedBirthOnlyWithAge(p)) return null;
     // No fade if person would be younger than 70
@@ -1083,7 +1085,7 @@ function calculateLayout(db, config) {
   };
 
   const getLifeText = (p) => formatLifeRange(p && p.bYear, p && p.dYear, {
-    dash: '–',
+    dash: '~',
     birthFallback: '?',
     deathFallback: ''
   });
@@ -1139,7 +1141,8 @@ function calculateLayout(db, config) {
     const rawBirthYear = getBYear(db, id);
     const boxEndYear = getTimelineBoxEndYear(p, rawBirthYear);
     const livingYearEdgeOverlap = isLivingPerson(p) ? TIMELINE_YEAR_EDGE_W : 0;
-    return Math.max(0, (boxEndYear - birthYear) * PX_PER_YEAR + livingYearEdgeOverlap);
+    const currentYearDeathOffset = endsAtCurrentYearDeath(p) ? -TIMELINE_YEAR_EDGE_W : 0;
+    return Math.max(0, (boxEndYear - birthYear) * PX_PER_YEAR + livingYearEdgeOverlap + currentYearDeathOffset);
   };
   const getPersonalEventMarks = (id, nodeWidth, person) => {
     if (!showTimeline) return [];

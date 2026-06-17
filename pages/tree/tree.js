@@ -35,6 +35,7 @@ const TREE_STYLE = {
   nodeBorderWidth: 2,
   iconBorderColor: '#55616d',
   iconSize: 18,
+  marriageIconSize: 26,
   iconStrokeWidth: 2,
   leafBorderColor: '#55616d',
   leafIconSize: 18,
@@ -4573,7 +4574,7 @@ Page({
     const b = person && person.bYear ? String(person.bYear) : '';
     const d = person && person.dYear ? String(person.dYear) : '';
     return formatLifeRange(b, d, {
-      dash: '-',
+      dash: '~',
       birthFallback: '',
       deathFallback: ''
     });
@@ -7356,11 +7357,14 @@ Page({
         this._drawRoundRect(ctx, x, chipY, w, nodeH, 0, 'rgba(0,0,0,0)', fadeBorder, style.nodeBorderWidth);
       }
       const timelineIconBoxLeft = timelineX ? Number(node.timelineIconBoxLeft || 0) : 0;
+      const drawIconSize = (node.iconType === 'marriage' || node.iconType === 'marriageCollapsed')
+        ? (style.marriageIconSize || style.iconSize)
+        : style.iconSize;
       const iconCenterX = timelineX ? timelineIconBoxLeft + timelineIconBoxSize / 2 : 40;
-      const iconOffsetX = Math.max(0, iconCenterX - style.iconSize / 2);
+      const iconOffsetX = Math.max(0, iconCenterX - drawIconSize / 2);
       const labelNudgeX = Number(node.labelNudgeX || 0);
       const textOffsetX = (timelineX ? timelineIconBoxLeft + timelineIconBoxSize + 2 : 64) + labelNudgeX;
-      this._drawScreenshotIcon(ctx, node, x + iconOffsetX, chipY + Math.max(0, (nodeH - style.iconSize) / 2), fadeIcon);
+      this._drawScreenshotIcon(ctx, node, x + iconOffsetX, chipY + Math.max(0, (nodeH - drawIconSize) / 2), fadeIcon);
 
       ctx.fillStyle = fadeName;
       const normalNameFont = '28px SimSun, serif';
@@ -7437,17 +7441,19 @@ Page({
       const tone = Number.isFinite(Number(mark.tone)) ? Math.abs(Number(mark.tone)) % lineColors.length : 0;
       const lineColor = namedTone ? namedTone.line : lineColors[tone];
       const rangeColor = namedTone ? namedTone.range : rangeColors[tone];
-      const borderW = Number((this.data.treeStyle && this.data.treeStyle.nodeBorderWidth) || TREE_STYLE.nodeBorderWidth || 2);
-      const top = nodeY + borderW + Number(mark.top === undefined ? 2 : mark.top);
-      const h = Math.max(1, Number(mark.h || (nodeH - borderW * 2 - 4)));
-      const x = nodeX + Number(mark.x || 0);
-      const w = Math.max(1, Number(mark.w || 2));
+      const toCanvasUnit = value => Number(value || 0);
+      const markTop = toCanvasUnit(mark.top === undefined ? 2 : mark.top);
+      const markBottom = toCanvasUnit(2);
+      const top = nodeY + markTop;
+      const h = Math.max(1, mark.h === undefined ? nodeH - markTop - markBottom : toCanvasUnit(mark.h));
+      const x = nodeX + toCanvasUnit(mark.x || 0);
+      const w = Math.max(1, toCanvasUnit(mark.w || 2));
       if (mark.isUnderlay) {
         ctx.fillStyle = '#fff';
         ctx.fillRect(x, top, w, h);
       } else if (mark.isRange) {
-        const leftCapW = mark.splitLeftCap ? 1 : 2;
-        const rightCapW = mark.splitRightCap ? 1 : 2;
+        const leftCapW = Math.max(1, toCanvasUnit(mark.splitLeftCap ? 1 : 2));
+        const rightCapW = Math.max(1, toCanvasUnit(mark.splitRightCap ? 1 : 2));
         ctx.fillStyle = rangeColor;
         ctx.fillRect(x, top, w, h);
         ctx.fillStyle = lineColor;
@@ -7455,18 +7461,20 @@ Page({
         if (!mark.hideRightCap) ctx.fillRect(x + Math.max(0, w - rightCapW), top, rightCapW, h);
       } else {
         ctx.fillStyle = lineColor;
-        ctx.fillRect(x, top, mark.splitPoint ? Math.max(1, w) : Math.max(2, w), h);
+        ctx.fillRect(x, top, mark.splitPoint ? Math.max(1, w) : Math.max(1, toCanvasUnit(2), w), h);
       }
     });
   },
 
   _drawMarriageIconFallback(ctx, x, y, filled = false, color = TREE_STYLE.iconBorderColor) {
-    const cx1 = x + 7;
-    const cx2 = x + 11;
-    const cy = y + 9;
-    const r = 5;
+    const size = TREE_STYLE.marriageIconSize || TREE_STYLE.iconSize || 18;
+    const scale = size / 18;
+    const cx1 = x + 7 * scale;
+    const cx2 = x + 11 * scale;
+    const cy = y + 9 * scale;
+    const r = 5 * scale;
     ctx.save();
-    ctx.lineWidth = 2;
+    ctx.lineWidth = Math.max(1, 2 * scale);
     ctx.strokeStyle = color;
     ctx.fillStyle = color;
     if (filled) {
@@ -7507,9 +7515,17 @@ Page({
     const type = node ? node.iconType : nodeOrType;
     const iconSrc = node ? node.iconSrc : getTreeIconSrc(type, '');
     const iconColor = color || style.iconBorderColor;
+    const drawIconSize = (type === 'marriage' || type === 'marriageCollapsed')
+      ? (style.marriageIconSize || style.iconSize)
+      : style.iconSize;
     const iconImage = iconSrc && this._screenshotTreeIconImages && this._screenshotTreeIconImages[iconSrc];
     if (iconImage) {
-      ctx.drawImage(iconImage, x, y, style.iconSize, style.iconSize);
+      ctx.drawImage(iconImage, x, y, drawIconSize, drawIconSize);
+      return;
+    }
+
+    if (type === 'marriage' || type === 'marriageCollapsed') {
+      this._drawMarriageIconFallback(ctx, x, y, type === 'marriageCollapsed', iconColor);
       return;
     }
 
