@@ -1117,6 +1117,20 @@ function calculateLayout(db, config) {
   };
 
 
+  function endsAtCurrentYearDeath(p) {
+    return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+  }
+
+  function endsAtCurrentYearDeath(p) {
+    return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+  }
+
+  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+
+  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+
+  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+
   const getFadeStartPercent = (p, bYear) => {
     if (!showTimeline || isLivingPerson(p) || (p && p.dYear) || hasEstimatedBirthOnlyWithAge(p)) return null;
     // No fade if person would be younger than 70
