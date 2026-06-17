@@ -354,23 +354,6 @@
     </view>
   </view>
 
-  <view wx:if="{{showScreenshotPreview}}" class="screenshot-preview-overlay" bindtap="closeScreenshotPreview">
-    <view class="screenshot-preview-panel" style="transform: translateY({{screenshotPreviewDrawerY}}px);" catchtap="catchTap">
-      <view class="screenshot-preview-drag-handle" catchtouchstart="onScreenshotPreviewTouchStart" catchtouchmove="onScreenshotPreviewTouchMove" catchtouchend="onScreenshotPreviewTouchEnd">
-        <view class="screenshot-preview-handle-bar"></view>
-      </view>
-      <view class="screenshot-preview-header">
-        <button class="screenshot-preview-close" size="mini" bindtap="closeScreenshotPreview">×</button>
-        <text class="screenshot-preview-title">截图预览</text>
-        <view class="screenshot-preview-header-spacer"></view>
-      </view>
-
-      <scroll-view class="screenshot-preview-wrap" scroll-y="{{true}}" scroll-x="{{true}}">
-        <image class="screenshot-preview-image" src="{{screenshotPreviewImagePath}}" mode="widthFix" bindtap="onPreviewScreenshotImage"></image>
-      </scroll-view>
-    </view>
-  </view>
-
   <view wx:if="{{showAiImportPanel}}" class="ai-import-overlay" bindtap="closeAiImportPanel">
     <view class="ai-import-panel" catchtap="catchTap">
       <view class="ai-import-header">

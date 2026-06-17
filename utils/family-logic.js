@@ -1116,6 +1116,7 @@ function calculateLayout(db, config) {
     return Math.min(rawBirthYear + 80, CURRENT_YEAR);
   };
 
+
   function endsAtCurrentYearDeath(p) {
     return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
   }
@@ -1208,7 +1209,7 @@ function calculateLayout(db, config) {
     const rawBirthYear = getBYear(db, id);
     const boxEndYear = getTimelineBoxEndYear(p, rawBirthYear);
     const livingYearEdgeOverlap = isLivingPerson(p) ? TIMELINE_YEAR_EDGE_W : 0;
-    const currentYearDeathOffset = endsAtCurrentYearDeath(p) ? -TIMELINE_YEAR_EDGE_W : 0;
+    const currentYearDeathOffset = !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR ? -TIMELINE_YEAR_EDGE_W : 0;
     return Math.max(0, (boxEndYear - birthYear) * PX_PER_YEAR + livingYearEdgeOverlap + currentYearDeathOffset);
   };
   const getPersonalEventMarks = (id, nodeWidth, person) => {
