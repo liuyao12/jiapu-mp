@@ -986,7 +986,25 @@ Page({
       if (node && node.id) counts[node.id] = (counts[node.id] || 0) + 1;
       return counts;
     }, {});
+    const primaryDuplicateById = (nodes || []).reduce((map, node) => {
+      if (node && node.id && !node.isDuplicatePlaceholder && idCounts[node.id] > 1 && !map[node.id]) {
+        map[node.id] = node;
+      }
+      return map;
+    }, {});
     return (nodes || []).map(node => {
+      const duplicatePrimary = node.isDuplicatePlaceholder ? primaryDuplicateById[node.id] : null;
+      const duplicatePointerDirection = duplicatePrimary
+        ? (Number(duplicatePrimary.y || 0) < Number(node.y || 0) ? 'up' : 'down')
+        : '';
+      const duplicatePointerSymbol = duplicatePointerDirection === 'up'
+        ? '☝'
+        : duplicatePointerDirection === 'down'
+          ? '☟'
+          : '';
+      const displayIconType = duplicatePointerDirection
+        ? `duplicate-${duplicatePointerDirection}`
+        : node.iconType;
       const nodeFillColor = node.gender === 'male'
         ? TREE_STYLE.maleFill
         : node.gender === 'female'
@@ -1015,8 +1033,12 @@ Page({
       const labelMarginLeft = (this.data.showTimeline ? timelineIconBoxLeft + timelineIconBoxSize + 2 : 64) + labelNudgeX;
       return {
         ...node,
+        iconType: displayIconType,
+        originalIconType: node.iconType,
+        duplicatePointerDirection,
+        duplicatePointerSymbol,
         iconColor: node.iconType === 'marriage' ? this._getLineageToneColor(node.lineage) : TREE_STYLE.iconBorderColor,
-        iconSrc: getTreeIconSrc(node.iconType, node.lineage),
+        iconSrc: getTreeIconSrc(displayIconType, node.lineage),
         isDuplicateInstance: !!(node.id && idCounts[node.id] > 1),
         nodeFillColor,
         nodeBorderColor,
@@ -7529,8 +7551,16 @@ Page({
       return;
     }
 
-    if (type === 'marriage' || type === 'marriageCollapsed') {
-      this._drawMarriageIconFallback(ctx, x, y, type === 'marriageCollapsed', iconColor);
+    if (type === 'duplicate-up' || type === 'duplicate-down') {
+      const symbol = type === 'duplicate-up' ? '☝' : '☟';
+      const slotSize = style.iconSize;
+      ctx.save();
+      ctx.fillStyle = iconColor;
+      ctx.font = `bold ${Math.round(slotSize * 1.35)}px sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(symbol, x + slotSize / 2, y + slotSize / 2);
+      ctx.restore();
       return;
     }
 
