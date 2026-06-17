@@ -1120,6 +1120,10 @@ function calculateLayout(db, config) {
     return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
   }
 
+  function endsAtCurrentYearDeath(p) {
+    return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+  }
+
   const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
 
   const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
