@@ -28,14 +28,6 @@ function createSoongFamilyWorkspace() {
   return deepClone(soongFamilySample);
 }
 
-function createSoongFamilyWorkspace() {
-  return deepClone({
-    activeRootId: SOONG_FAMILY_ROOT_ID,
-    people: soongPeople,
-    timelineEvents: soongTimelineEvents
-  });
-}
-
 const BUNDLED_SAMPLES = [
   {
     key: 'tangImperial',

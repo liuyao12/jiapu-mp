@@ -1120,6 +1120,8 @@ function calculateLayout(db, config) {
 
   const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
 
+  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
+
   const getFadeStartPercent = (p, bYear) => {
     if (!showTimeline || isLivingPerson(p) || (p && p.dYear) || hasEstimatedBirthOnlyWithAge(p)) return null;
     // No fade if person would be younger than 70
@@ -1301,6 +1303,7 @@ function calculateLayout(db, config) {
         const spouse = db.people[sid];
         if (spouse && spouse.children && spouse.children.length > 0) {
           spouse.children.forEach(cid => {
+            if (isHiddenInTree(cid)) return;
             const childLineage = lineage === 'affinal' || !isBirthMotherOf(id, cid) ? 'affinal' : 'patrilineal';
             addKid(cid, childLineage, true);
           });
@@ -1323,7 +1326,7 @@ function calculateLayout(db, config) {
         const kidEntries = [];
         if (spouse && Array.isArray(spouse.children)) {
           spouse.children.forEach(cid => {
-            if (!db.people[cid] || seen.has(cid)) return;
+            if (!db.people[cid] || seen.has(cid) || isHiddenInTree(cid)) return;
             seen.add(cid);
             kidEntries.push({
               id: cid,
