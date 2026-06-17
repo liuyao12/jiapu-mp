@@ -140,8 +140,8 @@
         <view wx:if="{{showPersonalEventEditor}}" class="personal-event-edit-flow">
           <view wx:for="{{personalEventRows}}" wx:key="id" class="personal-event-row {{changedFields.events ? 'is-unsaved' : ''}}">
             <view class="personal-event-edit-chip tone-{{item.tone}} {{item.hidden ? 'is-hidden' : ''}}">
-              <input class="personal-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="name" placeholder="事件名" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
-              <input class="personal-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="yearLabel" placeholder="年份/起止年" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
+              <input class="personal-event-edit-input name" style="width:{{item.nameInputWidth}};" value="{{item.name}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="name" placeholder="事件" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
+              <input class="personal-event-edit-input year" style="width:{{item.yearInputWidth}};" value="{{item.yearLabel}}" bindinput="onPersonalEventInput" data-index="{{index}}" data-field="yearLabel" placeholder="公历" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
             </view>
             <view class="personal-event-delete" catchtap="onDeletePersonalEvent" data-index="{{index}}">×</view>
           </view>
@@ -149,10 +149,9 @@
       </block>
       <view wx:if="{{showPersonalEventDraft}}" class="personal-event-form-row">
         <view class="personal-event-edit-chip tone-{{personalEventDraftTone}} is-new">
-          <input class="personal-event-edit-input name" style="width:{{personalEventDraftNameWidth}};" value="{{personalEventDraftName}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftName" placeholder="事件名" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
-          <input class="personal-event-edit-input year" style="width:{{personalEventDraftYearWidth}};" value="{{personalEventDraftYear}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftYear" placeholder="年份/起止年" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
+          <input class="personal-event-edit-input name" style="width:{{personalEventDraftNameWidth}};" value="{{personalEventDraftName}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftName" placeholder="事件" placeholder-class="personal-event-draft-placeholder-name" adjust-position="{{false}}" catchtap="stop" />
+          <input class="personal-event-edit-input year" style="width:{{personalEventDraftYearWidth}};" value="{{personalEventDraftYear}}" bindinput="onPersonalEventDraftInput" data-field="personalEventDraftYear" placeholder="公历" placeholder-class="personal-event-draft-placeholder-year" adjust-position="{{false}}" catchtap="stop" />
         </view>
-        <button class="personal-event-add" size="mini" catchtap="onAddPersonalEvent">确定</button>
         <view class="personal-event-cancel" catchtap="onCancelPersonalEventDraft">×</view>
       </view>
     </view>
@@ -176,7 +175,7 @@
       <view class="rel-view-grid">
         <view class="rel-view-col">
           <text class="row-label">生母</text>
-          <picker wx:if="{{showMotherPicker}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
+          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
             <view wx:if="{{showMotherInvitation}}" class="picker-box invitation">选生母</view>
             <view wx:if="{{showMotherPickerCard}}" class="{{motherPickerCardClass}}">
               <view class="name-scroll-container">
@@ -206,7 +205,7 @@
           <text class="row-label">配偶</text>
           <view class="card-list">
             <view wx:for="{{localSpouses}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
-              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+              <view class="name-scroll-container" bindtap="onRelationCardTap" data-id="{{item.id}}" data-type="spouses">
                 <view class="rel-label-scroll scrolling-text">
                   <text class="rel-name-txt">{{item._displayName}}</text>
                   <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>
@@ -225,7 +224,7 @@
           <text class="row-label">子女</text>
           <view class="card-list">
             <view wx:for="{{localChildren}}" wx:key="id" class="{{item.cardClass}}" style="{{item.cardStyle}}">
-              <view class="name-scroll-container" bindtap="onJump" data-id="{{item.id}}">
+              <view class="name-scroll-container" bindtap="onRelationCardTap" data-id="{{item.id}}" data-type="children">
                 <view class="rel-label-scroll scrolling-text">
                   <text class="rel-name-txt">{{item._displayName}}</text>
                   <text wx:if="{{item.rankText}}" class="rel-rank-txt"> ({{item.rankText}})</text>

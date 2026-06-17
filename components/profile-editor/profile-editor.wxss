@@ -405,19 +405,24 @@ view, text, input {
 /* Relationships Grid */
 .rel-view-grid { display: flex; flex-direction: row; gap: 20rpx; margin-top: 15rpx; padding-bottom: 150rpx; }
 .rel-view-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.birth-mother-picker { display: block; width: 100%; background: #fff !important; color: #000 !important; }
 .rel-card { margin-bottom: 8rpx; padding: 0 14rpx; border-radius: 8rpx; display: flex !important; flex-direction: row !important; justify-content: space-between !important; align-items: center !important; border: 1rpx solid rgba(0,0,0,0.05); height: 52rpx; width: 100%; }
 .rel-card.male { background: #bbdefb; border-color: rgba(0,0,0,0.05); }
 .rel-card.female { background: #fce4ec; border-color: rgba(0,0,0,0.05); }
 .rel-card.unknown { background: #dcedc8; border-color: rgba(0,0,0,0.05); }
 .rel-card.pending-highlight { border: 2rpx solid #f57c00 !important; box-shadow: 0 0 0 2rpx rgba(245,124,0,0.25); }
+.rel-card.tree-hidden { background: #eeeeee !important; border-color: #d7d7d7 !important; color: #888 !important; opacity: 0.78; }
+.rel-card.tree-hidden .rel-name-txt,
+.rel-card.tree-hidden .rel-rank-txt,
+.rel-card.tree-hidden .rel-year-inline { color: #777 !important; }
 
 .name-scroll-container { flex: 1; overflow: hidden; white-space: nowrap; display: flex; align-items: center; margin-right: 10rpx; }
-.rel-label-scroll { display: flex; align-items: baseline; white-space: nowrap; min-width: 0; flex: 0 0 auto; }
-.rel-name-txt { font-family: "SimSun", serif; font-size: 26rpx; color: #000; }
+.rel-label-scroll { display: flex; align-items: baseline; white-space: nowrap; min-width: 0; width: 100%; flex: 1 1 auto; overflow: hidden; }
+.rel-name-txt { font-family: "SimSun", serif; font-size: 26rpx; color: #000; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
 .rel-card.relation-spouses .rel-name-txt { font-family: "KaiTi", "Kaiti SC", "STKaiti", "AR PL UKai CN", "FangSong", "STFangsong", "FangSong_GB2312", "Songti SC", "STSong", "SimSun", serif; font-style: normal; }
 .rel-rank-txt { font-family: "SimSun", serif; font-size: 18rpx; color: #000; opacity: 0.72; flex-shrink: 0; }
 .rel-card.relation-spouses .rel-rank-txt { font-family: "KaiTi", "Kaiti SC", "STKaiti", "AR PL UKai CN", "FangSong", "STFangsong", "FangSong_GB2312", "Songti SC", "STSong", "SimSun", serif; font-style: normal; }
-.rel-year-inline { margin-left: 8rpx; }
+.rel-year-inline { margin-left: auto; padding-left: 8rpx; flex: 0 0 auto; text-align: right; }
 .item-right { display: flex; align-items: center; gap: 8rpx; flex-shrink: 0; background: inherit; height: 100%; padding-left: 10rpx; }
 
 /* Marquee Animation */
@@ -731,23 +736,23 @@ view, text, input {
   flex: 0 0 auto;
   min-width: 0;
   max-width: none;
-  height: 42rpx;
+  height: 44rpx;
   display: flex;
   align-items: center;
   border: 1rpx solid transparent;
   border-radius: 999rpx;
-  overflow: visible;
+  overflow: hidden;
   background: #fff;
   box-sizing: border-box;
 }
 .personal-event-edit-input {
-  height: 42rpx;
-  min-height: 42rpx;
-  line-height: 42rpx;
+  height: 44rpx;
+  min-height: 44rpx;
+  line-height: 44rpx;
   border: none;
-  padding: 0 10rpx;
+  padding: 0 11rpx;
   box-sizing: border-box;
-  font-size: 21rpx;
+  font-size: 22rpx;
 }
 .personal-event-edit-input.name {
   flex: 0 0 auto;
@@ -794,9 +799,9 @@ view, text, input {
 .personal-event-draft-placeholder-name { color: rgba(255,255,255,0.72); }
 .personal-event-draft-placeholder-year { color: rgba(198, 40, 40, 0.50); }
 .personal-event-delete {
-  width: 42rpx;
-  height: 42rpx;
-  line-height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 42rpx;
   text-align: center;
   color: #999;
   border: 1rpx solid #ddd;
@@ -806,9 +811,9 @@ view, text, input {
   flex: 0 0 auto;
 }
 .personal-event-cancel {
-  width: 42rpx;
-  height: 42rpx;
-  line-height: 40rpx;
+  width: 44rpx;
+  height: 44rpx;
+  line-height: 42rpx;
   text-align: center;
   color: #999;
   border: 1rpx solid #ddd;

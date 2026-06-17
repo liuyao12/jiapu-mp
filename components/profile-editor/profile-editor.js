@@ -19,7 +19,8 @@ Component({
     canAddFather: Boolean,
     showJumpBtn: Boolean,
     creatingProfile: Boolean,
-    hometownHint: String
+    hometownHint: String,
+    relationVisibilityEnabled: Boolean
   },
 
   data: {
@@ -224,6 +225,16 @@ Component({
     mother(mother) {
       if (!this._isReady || !this.properties.show) return;
       this.setData(this._buildMotherState(this._decoratePerson(mother)));
+    },
+
+    spouses(spouses) {
+      if (!this._isReady || !this.properties.show) return;
+      this.setData({ localSpouses: this._decorateRelationList(spouses || [], 'spouses') });
+    },
+
+    children(children) {
+      if (!this._isReady || !this.properties.show) return;
+      this.setData({ localChildren: this._decorateRelationList(children || [], 'children') });
     },
 
     hometownHint(hint) {
@@ -1061,7 +1072,7 @@ Component({
         const isDragging = item.id === draggingId;
         return {
           ...item,
-          cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (isDragging ? ' dragging' : ''),
+          cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (item._treeHidden ? ' tree-hidden' : '') + (isDragging ? ' dragging' : ''),
           cardStyle: isDragging ? `transform: translateY(${dragOffsetY}px) scale(1.02);` : '',
           yearText: item._displayYear || item.bYear || '',
           rankText: this._normalizeRankText(item.rank),
@@ -1411,6 +1422,9 @@ Component({
     onExitEdit() {
       const creatingProfile = this.properties.creatingProfile === true;
       const nextSections = this._sectionState(creatingProfile, false, creatingProfile);
+      if (this.data.showPersonalEventEditor || this.data.showPersonalEventDraft) {
+        this._finishPersonalEventEditing();
+      }
       this._setDrawerInternalState({
         editGender: false,
         showGenderDisplay: true,
@@ -1551,7 +1565,8 @@ Component({
     onShowPersonalEventDraft() {
       this.setData({
         showPersonalEventDraft: true,
-        showPersonalEventEditor: true
+        showPersonalEventEditor: true,
+        drawerY: 0
       });
     },
 
@@ -1570,19 +1585,21 @@ Component({
     onEditPersonalEvents() {
       this.setData({
         showPersonalEventEditor: true,
-        showPersonalEventDraft: false
+        showPersonalEventDraft: false,
+        drawerY: 0
       });
     },
 
-    _commitPersonalEventDraft() {
+    _commitPersonalEventDraft(options = {}) {
+      const silent = options.silent === true;
       const name = String(this.data.personalEventDraftName || '').trim();
       const ranges = this._parsePersonalEventYearRanges(this.data.personalEventDraftYear);
       if (!name) {
-        wx.showToast({ title: '请填写事件名', icon: 'none' });
+        if (!silent) wx.showToast({ title: '请填写事件名', icon: 'none' });
         return false;
       }
       if (!ranges || !ranges.length) {
-        wx.showToast({ title: '请填写年份', icon: 'none' });
+        if (!silent) wx.showToast({ title: '请填写年份', icon: 'none' });
         return false;
       }
       const yearLabel = this._formatPersonalEventYearRanges(ranges);
@@ -1604,6 +1621,23 @@ Component({
         showPersonalEventEditor: false
       });
       return true;
+    },
+
+    _finishPersonalEventEditing() {
+      const hasDraft = !!(
+        String(this.data.personalEventDraftName || '').trim()
+        || String(this.data.personalEventDraftYear || '').trim()
+      );
+      if (hasDraft && this._commitPersonalEventDraft({ silent: true })) return;
+      this.setData({
+        personalEventDraftName: '',
+        personalEventDraftYear: '',
+        personalEventDraftTone: 0,
+        ...this._personalEventDraftWidthPatch('', ''),
+        showPersonalEventDraft: false,
+        showPersonalEventEditor: false,
+        saveButtonClass: this.data.hasChanges ? 'save-btn-main active' : 'save-btn-main disabled'
+      });
     },
 
     onAddPersonalEvent() {
@@ -1790,6 +1824,19 @@ Component({
     onClose() { this.triggerEvent('close'); },
     onDelete() { this.triggerEvent('delete'); },
     onJump(e) { this.triggerEvent('jump', e.currentTarget.dataset); },
+
+    onRelationCardTap(e) {
+      const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
+      if (!dataset.id) return;
+      if (!this.properties.relationVisibilityEnabled) {
+        this.triggerEvent('jump', dataset);
+        return;
+      }
+      this.triggerEvent('relationvisibilitytoggle', {
+        id: dataset.id,
+        type: dataset.type || ''
+      });
+    },
     onJumpToTree(e) {
       this.triggerEvent('closeprofile');
       this.triggerEvent('jumptotree', e.currentTarget.dataset);
