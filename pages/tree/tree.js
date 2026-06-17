@@ -7529,6 +7529,11 @@ Page({
       return;
     }
 
+    if (type === 'marriage' || type === 'marriageCollapsed') {
+      this._drawMarriageIconFallback(ctx, x, y, type === 'marriageCollapsed', iconColor);
+      return;
+    }
+
     const slotSize = style.iconSize;
     const iconSize = type === 'leaf' ? style.leafIconSize : style.iconSize;
     const iconInset = (slotSize - iconSize) / 2;
