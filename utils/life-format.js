@@ -13,7 +13,7 @@ function formatLifeRange(bYear, dYear, options = {}) {
   const d = cleanYearText(dYear);
   if (!b && !d) return '';
 
-  const dash = options.dash || '-';
+  const dash = options.dash || '~';
   const birthFallback = options.birthFallback !== undefined ? options.birthFallback : '?';
   const deathFallback = options.deathFallback !== undefined ? options.deathFallback : '?';
   const left = b || birthFallback;
