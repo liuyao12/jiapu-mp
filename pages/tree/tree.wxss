@@ -2008,12 +2008,22 @@ text, view, button, input { font-weight: normal !important; }
   background: #fff !important;
 }
 
+.duplicate-couple-halo {
+  position: absolute;
+  border-radius: 14rpx;
+  pointer-events: none;
+  z-index: 9;
+  box-shadow:
+    0 0 0 4rpx rgba(80,137,128,0.22),
+    0 0 20rpx 6rpx rgba(80,137,128,0.16);
+}
 .node.duplicate-placeholder { animation: duplicateNodeEnter 180ms ease-out; }
 .node.duplicate-instance .node-inner {
   box-shadow:
     0 0 0 4rpx rgba(80,137,128,0.22),
     0 0 20rpx 6rpx rgba(80,137,128,0.16);
 }
+.node.duplicate-instance.duplicate-halo-member .node-inner { box-shadow: none; }
 .node.duplicate-flash .node-inner {
   animation: duplicateNodeFlash 900ms ease-out;
   box-shadow:

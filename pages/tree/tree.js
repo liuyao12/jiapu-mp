@@ -903,6 +903,7 @@ Page({
     const { db } = this.data;
     const nodes = this._decorateTreeNodes(layout.nodes || []);
     const lines = this._decorateConnectorLines(layout.lines || []);
+    const duplicateHaloBoxes = this._buildDuplicateHaloBoxes(nodes);
     const timelineNodeYearEdges = this.data.showTimeline ? this._buildTimelineNodeYearEdges(nodes) : [];
     const maxH = layout.maxH + treeTopGap;
     const treeContentBottomPadding = this._getTreeContentBottomPadding(nodes, maxH, treeTopGap);
@@ -919,6 +920,7 @@ Page({
       'db.activeRootId': db.activeRootId,  // 更新activeRootId以触发正确的空状态显示
       nodes,
       lines,
+      duplicateHaloBoxes,
       rulerTicks: layout.rulerTicks,
       timelineEventBands: this.data.showTimeline ? (layout.timelineEventBands || []) : [],
       timelineNodeYearEdges,
@@ -979,6 +981,30 @@ Page({
     return lineage === 'affinal'
       ? TREE_STYLE.affinalLineColor
       : (TREE_STYLE.patrilinealLineColor || TREE_STYLE.lineColor);
+  },
+
+  _buildDuplicateHaloBoxes(nodes) {
+    const groups = {};
+    (nodes || []).forEach(node => {
+      if (!node || !node.duplicateHaloGroup) return;
+      if (!groups[node.duplicateHaloGroup]) groups[node.duplicateHaloGroup] = [];
+      groups[node.duplicateHaloGroup].push(node);
+    });
+    return Object.keys(groups).map(groupId => {
+      const groupNodes = groups[groupId];
+      const left = Math.min(...groupNodes.map(node => Number(node.x || 0)));
+      const top = Math.min(...groupNodes.map(node => Number(node.y || 0)));
+      const right = Math.max(...groupNodes.map(node => Number(node.x || 0) + Number(this.data.showTimeline ? node.timelineRenderW : node.w || 0)));
+      const bottom = Math.max(...groupNodes.map(node => Number(node.y || 0) + Number(node.h || 56)));
+      const pad = 8;
+      return {
+        id: groupId,
+        x: left - pad,
+        y: top - pad,
+        w: Math.max(0, right - left + pad * 2),
+        h: Math.max(0, bottom - top + pad * 2)
+      };
+    });
   },
 
   _decorateTreeNodes(nodes) {
@@ -4596,7 +4622,6 @@ Page({
     const b = person && person.bYear ? String(person.bYear) : '';
     const d = person && person.dYear ? String(person.dYear) : '';
     return formatLifeRange(b, d, {
-      dash: '~',
       birthFallback: '',
       deathFallback: ''
     });
