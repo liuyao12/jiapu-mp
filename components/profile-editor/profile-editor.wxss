@@ -497,16 +497,17 @@ view, text, input {
   left: 12rpx;
   top: 7rpx;
   width: 3rpx;
-  height: 25rpx;
+  height: 26rpx;
 }
 .profile-lineage-connector.middle,
 .profile-lineage-connector.lower {
   left: 12rpx;
-  width: 11rpx;
+  width: 14rpx;
   height: 3rpx;
+  z-index: 4;
 }
 .profile-lineage-connector.middle { top: 18rpx; }
-.profile-lineage-connector.lower { display: none; }
+.profile-lineage-connector.lower { top: 30rpx; }
 .profile-lineage-bar {
   height: 7rpx;
   z-index: 3;
@@ -514,7 +515,7 @@ view, text, input {
 .profile-lineage-bar.first,
 .profile-lineage-bar.middle,
 .profile-lineage-bar.lower {
-  width: 28rpx;
+  width: 32rpx;
 }
 .profile-lineage-bar.first {
   left: 7rpx;
