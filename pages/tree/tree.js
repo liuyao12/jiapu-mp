@@ -4596,7 +4596,6 @@ Page({
     const b = person && person.bYear ? String(person.bYear) : '';
     const d = person && person.dYear ? String(person.dYear) : '';
     return formatLifeRange(b, d, {
-      dash: '~',
       birthFallback: '',
       deathFallback: ''
     });
