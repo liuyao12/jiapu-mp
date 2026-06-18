@@ -1143,7 +1143,6 @@ function calculateLayout(db, config) {
   };
 
   const getLifeText = (p) => formatLifeRange(p && p.bYear, p && p.dYear, {
-    dash: '~',
     birthFallback: '?',
     deathFallback: ''
   });
