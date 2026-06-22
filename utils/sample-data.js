@@ -1,6 +1,6 @@
-const tangImperialSample = require('./sample-tang-imperial');
-const duguXinSample = require('./sample-dugu-xin');
-const soongFamilySample = require('./sample-soong-family');
+const tangImperialSample = require('./sample-tang-imperial.js');
+const duguXinSample = require('./sample-dugu-xin.js');
+const soongFamilySample = require('./sample-soong-family.js');
 
 const TANG_IMPERIAL_WORKSPACE_ID = 'sample_tang_imperial';
 const TANG_IMPERIAL_ROOT_ID = 'tan_imp_001-';

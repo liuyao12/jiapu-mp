@@ -419,6 +419,7 @@ view, text, input {
 .name-scroll-container { flex: 1; overflow: hidden; white-space: nowrap; display: flex; align-items: center; margin-right: 10rpx; }
 .rel-label-scroll { display: flex; align-items: baseline; white-space: nowrap; min-width: 0; width: 100%; flex: 1 1 auto; overflow: hidden; }
 .rel-name-txt { font-family: "SimSun", serif; font-size: 26rpx; color: #000; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1 1 auto; }
+.rel-card.relation-children .rel-name-txt { flex: 0 1 auto; }
 .rel-card.relation-spouses .rel-name-txt { font-family: "KaiTi", "Kaiti SC", "STKaiti", "AR PL UKai CN", "FangSong", "STFangsong", "FangSong_GB2312", "Songti SC", "STSong", "SimSun", serif; font-style: normal; }
 .rel-rank-txt { font-family: "SimSun", serif; font-size: 18rpx; color: #000; opacity: 0.72; flex-shrink: 0; }
 .rel-card.relation-spouses .rel-rank-txt { font-family: "KaiTi", "Kaiti SC", "STKaiti", "AR PL UKai CN", "FangSong", "STFangsong", "FangSong_GB2312", "Songti SC", "STSong", "SimSun", serif; font-style: normal; }
@@ -493,16 +494,17 @@ view, text, input {
   z-index: 2;
 }
 .profile-lineage-connector.vertical {
-  left: 9rpx;
+  left: 12rpx;
   top: 7rpx;
   width: 3rpx;
-  height: 27rpx;
+  height: 26rpx;
 }
 .profile-lineage-connector.middle,
 .profile-lineage-connector.lower {
-  left: 9rpx;
+  left: 12rpx;
   width: 14rpx;
   height: 3rpx;
+  z-index: 4;
 }
 .profile-lineage-connector.middle { top: 18rpx; }
 .profile-lineage-connector.lower { top: 30rpx; }
@@ -510,15 +512,18 @@ view, text, input {
   height: 7rpx;
   z-index: 3;
 }
+.profile-lineage-bar.first,
+.profile-lineage-bar.middle,
+.profile-lineage-bar.lower {
+  width: 32rpx;
+}
 .profile-lineage-bar.first {
   left: 7rpx;
   top: 4rpx;
-  width: 34rpx;
 }
 .profile-lineage-bar.middle,
 .profile-lineage-bar.lower {
   left: 20rpx;
-  width: 28rpx;
 }
 .profile-lineage-bar.middle { top: 16rpx; }
 .profile-lineage-bar.lower { top: 28rpx; }

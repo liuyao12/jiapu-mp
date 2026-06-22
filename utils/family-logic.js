@@ -1121,16 +1121,6 @@ function calculateLayout(db, config) {
     return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
   }
 
-  function endsAtCurrentYearDeath(p) {
-    return !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
-  }
-
-  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
-
-  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
-
-  const endsAtCurrentYearDeath = (p) => !isLivingPerson(p) && parseYearValue(p && p.dYear) === CURRENT_YEAR;
-
   const getFadeStartPercent = (p, bYear) => {
     if (!showTimeline || isLivingPerson(p) || (p && p.dYear) || hasEstimatedBirthOnlyWithAge(p)) return null;
     // No fade if person would be younger than 70
@@ -1153,7 +1143,6 @@ function calculateLayout(db, config) {
   };
 
   const getLifeText = (p) => formatLifeRange(p && p.bYear, p && p.dYear, {
-    dash: '~',
     birthFallback: '?',
     deathFallback: ''
   });
@@ -1349,27 +1338,6 @@ function calculateLayout(db, config) {
   };
 
   const getRenderableKids = (id, lineage = 'patrilineal') => getRenderableKidEntries(id, lineage).map(entry => entry.id);
-  const hasVisiblePatrilinealPathFromRoot = (id) => {
-    if (!id || !rootId || id === rootId) return false;
-    const seen = new Set();
-    let currentId = id;
-    while (currentId && !seen.has(currentId)) {
-      if (isHiddenInTree(currentId)) return false;
-      seen.add(currentId);
-      const fatherId = getFatherId(currentId);
-      if (!fatherId) return false;
-      if ((collapsedNodes || []).includes(fatherId)) return false;
-      if (fatherId === rootId) return true;
-      currentId = fatherId;
-    }
-    return false;
-  };
-  const shouldDeferToPatrilinealPath = (entry) => {
-    if (!entry || !entry.id || !entry.viaMaternal || !rootId) return false;
-    return extractProgenitorId(entry.id) === extractProgenitorId(rootId)
-      && hasVisiblePatrilinealPathFromRoot(entry.id);
-  };
-
   const findMaxRight = (id, depth, visitedFmr) => {
     if (visitedFmr.has(id)) return;
     visitedFmr.add(id);
@@ -1506,7 +1474,7 @@ function calculateLayout(db, config) {
       sIds.forEach(sid => {
         const s = db.people[sid]; if (!s) return;
         // Skip if this node was already rendered via traverse() (e.g. it appeared in someone's
-        // children array before we got here). Rendering it again would consume an extra row → gap.
+        // children array before we got here). Rendering it again would consume an extra row -> gap.
         if (visitedTraverse.has(sid)) return;
         // Mark spouse as visited so traverse() won't accidentally re-process it
         // if the same ID also appears in someone's children array (data inconsistency guard)
@@ -1549,11 +1517,13 @@ function calculateLayout(db, config) {
         if (!groupMaternalKidsBySpouse) return;
         if (!spouseHasExpandableItems || spouseCollapsed) return;
 
-        const childXBase = getChildTrunkX(spouseKids, parentIconX);
-        const stemStartMidY = midY;
+        const spouseIconX = sX + TRUNK_OFFSET;
+        const spouseMidY = sY + rowH / 2;
+        const childXBase = getChildTrunkX(spouseKids, spouseIconX);
+        const stemStartMidY = spouseMidY;
         const connectorLineage = spouseKidEntries.every(entry => entry.lineage === 'patrilineal') ? 'patrilineal' : 'affinal';
-        if (showTimeline && !(connectorLineage === 'affinal' && childXBase < parentIconX)) {
-          lines.push({ type: 'branch', lineage: connectorLineage, x: Math.min(parentIconX, childXBase), y: stemStartMidY, w: Math.abs(childXBase - parentIconX) });
+        if (showTimeline && !(connectorLineage === 'affinal' && childXBase < spouseIconX)) {
+          lines.push({ type: 'branch', lineage: connectorLineage, x: Math.min(spouseIconX, childXBase), y: stemStartMidY, w: Math.abs(childXBase - spouseIconX) });
         }
 
         let lastChildMidY = stemStartMidY;
@@ -1566,7 +1536,7 @@ function calculateLayout(db, config) {
           const childMidY = childY + rowH / 2;
           const childEntry = spouseKidEntries.find(entry => entry.id === cid);
           const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
-          const shouldRenderAsDuplicatePlaceholder = visitedTraverse.has(cid) || shouldDeferToPatrilinealPath(childEntry);
+          const shouldRenderAsDuplicatePlaceholder = visitedTraverse.has(cid);
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
 
@@ -1602,7 +1572,7 @@ function calculateLayout(db, config) {
         let actualChildCount = 0;
         kids.forEach((cid) => {
           const childEntry = kidEntries.find(entry => entry.id === cid);
-          const isDuplicateChild = visitedTraverse.has(cid) || shouldDeferToPatrilinealPath(childEntry);
+          const isDuplicateChild = visitedTraverse.has(cid);
           actualChildCount++;
 
           // IMPORTANT: Record child row BEFORE traverse to use for branch line
