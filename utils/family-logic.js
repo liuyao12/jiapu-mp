@@ -1538,6 +1538,16 @@ function calculateLayout(db, config) {
           const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
           const shouldRenderAsDuplicatePlaceholder = visitedTraverse.has(cid);
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
+
+          if (shouldRenderAsDuplicatePlaceholder) {
+            const haloGroup = `${id}_${sid}_${cid}_${childRow}`;
+            lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
+            nextAvailableRow = addDuplicatePlaceholder(id, depth + 1, nextAvailableRow, childLineage, { duplicateHaloGroup: haloGroup });
+            nextAvailableRow = addDuplicatePlaceholder(sid, depth + 1, nextAvailableRow, childLineage, { duplicateHaloGroup: haloGroup });
+            lastChildMidY = (nextAvailableRow - 1) * rowStep + rowH / 2;
+            return;
+          }
+
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
 
           const beforeTraverseRow = nextAvailableRow;
