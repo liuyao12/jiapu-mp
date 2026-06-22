@@ -1366,7 +1366,7 @@ function calculateLayout(db, config) {
 
   const visitedTraverse = new Set();
   const duplicatePlaceholderCounts = {};
-  const addDuplicatePlaceholder = (id, depth, rowIdx, lineage = 'patrilineal', extraNodeProps = {}) => {
+  const addDuplicatePlaceholder = (id, depth, rowIdx, lineage = 'patrilineal') => {
     const person = db.people[id];
     if (!person) return rowIdx;
     const duplicateIndex = duplicatePlaceholderCounts[id] || 0;
@@ -1405,8 +1405,7 @@ function calculateLayout(db, config) {
       personalEventMarks: getPersonalEventMarks(id, nodeWidth, person),
       w: nodeWidth,
       isDuplicatePlaceholder: true,
-      duplicateTargetId: id,
-      ...extraNodeProps
+      duplicateTargetId: id
     });
     maxRow = Math.max(maxRow, rowIdx);
     return rowIdx + 1;
@@ -1474,14 +1473,9 @@ function calculateLayout(db, config) {
     if (!isCollapsed) {
       sIds.forEach(sid => {
         const s = db.people[sid]; if (!s) return;
-        // If a spouse was already rendered elsewhere (common in cousin marriages),
-        // show the duplicate couple here without expanding a second full branch.
-        if (visitedTraverse.has(sid)) {
-          const haloGroup = `${id}_${sid}_spouse_duplicate_${nextAvailableRow}`;
-          nextAvailableRow = addDuplicatePlaceholder(sid, depth, nextAvailableRow, lineage, { duplicateHaloGroup: haloGroup });
-          nextAvailableRow = addDuplicatePlaceholder(id, depth, nextAvailableRow, lineage, { duplicateHaloGroup: haloGroup });
-          return;
-        }
+        // Skip if this node was already rendered via traverse() (e.g. it appeared in someone's
+        // children array before we got here). Rendering it again would consume an extra row -> gap.
+        if (visitedTraverse.has(sid)) return;
         // Mark spouse as visited so traverse() won't accidentally re-process it
         // if the same ID also appears in someone's children array (data inconsistency guard)
         visitedTraverse.add(sid);
@@ -1557,7 +1551,9 @@ function calculateLayout(db, config) {
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
 
           const beforeTraverseRow = nextAvailableRow;
-          nextAvailableRow = traverse(cid, depth + 1, nextAvailableRow, childLineage);
+          nextAvailableRow = shouldRenderAsDuplicatePlaceholder
+            ? addDuplicatePlaceholder(cid, depth + 1, nextAvailableRow, childLineage)
+            : traverse(cid, depth + 1, nextAvailableRow, childLineage);
           if (nextAvailableRow > beforeTraverseRow) {
             lastChildMidY = childMidY;
           }
@@ -1603,24 +1599,9 @@ function calculateLayout(db, config) {
           // Save nextAvailableRow before traverse to detect if any descendants were actually rendered
           const beforeTraverseRow = nextAvailableRow;
           // traverse returns the total rows consumed by this child and all its descendants
-          if (isDuplicateChild) {
-            const childPerson = db.people[cid] || {};
-            const duplicateSpouseId = (childPerson.spouses || []).find(spouseId => visitedTraverse.has(spouseId) && db.people[spouseId]);
-            if (duplicateSpouseId) {
-              const duplicateSpouse = db.people[duplicateSpouseId] || {};
-              const childIsFemale = childPerson.gender === 'female';
-              const spouseIsFemale = duplicateSpouse.gender === 'female';
-              const motherId = childIsFemale ? cid : (spouseIsFemale ? duplicateSpouseId : cid);
-              const fatherId = motherId === cid ? duplicateSpouseId : cid;
-              const haloGroup = `${motherId}_${fatherId}_duplicate_couple_${childRow}`;
-              nextAvailableRow = addDuplicatePlaceholder(motherId, depth + 1, nextAvailableRow, childLineage, { duplicateHaloGroup: haloGroup });
-              nextAvailableRow = addDuplicatePlaceholder(fatherId, depth + 1, nextAvailableRow, childLineage, { duplicateHaloGroup: haloGroup });
-            } else {
-              nextAvailableRow = addDuplicatePlaceholder(cid, depth + 1, nextAvailableRow, childLineage);
-            }
-          } else {
-            nextAvailableRow = traverse(cid, depth + 1, nextAvailableRow, childLineage);
-          }
+          nextAvailableRow = isDuplicateChild
+            ? addDuplicatePlaceholder(cid, depth + 1, nextAvailableRow, childLineage)
+            : traverse(cid, depth + 1, nextAvailableRow, childLineage);
 
           // Only update lastChildMidY if this child or its descendants actually consumed rows
           // (i.e., nextAvailableRow increased after the traverse)
