@@ -98,7 +98,7 @@ Page({
     treeTopGap: TREE_STYLE.timelineBaseTopGap,
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
-    collapsedNodes: [], hiddenTreeIds: [], showDrawer: false,
+    collapsedNodes: [], duplicateExpandedKeys: [], hiddenTreeIds: [], showDrawer: false,
     canToggleRelationVisibility: false,
     showEmptyTree: false,
     showTreeArea: false,
@@ -868,6 +868,7 @@ Page({
         showSpouses,
         showMaternal,
         collapsedNodes: nextCollapsedNodes,
+        duplicateExpandedKeys: this.data.duplicateExpandedKeys || [],
         hiddenTreeIds: db.hiddenTreeIds || []
       };
       const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
@@ -3403,7 +3404,17 @@ Page({
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = dataset.id;
     const renderKey = dataset.renderKey || '';
-    if (this._handleDuplicateInstanceTap(id, renderKey) || Number(dataset.duplicate || 0) === 1) return;
+    const isDuplicateInstance = Number(dataset.duplicate || 0) === 1;
+    if (isDuplicateInstance) {
+      const current = this.data.duplicateExpandedKeys || [];
+      const key = dataset.instanceKey || renderKey || id;
+      const next = current.includes(key)
+        ? current.filter(x => x !== key)
+        : [...current, key];
+      this.setData({ duplicateExpandedKeys: next }, () => this.refreshTree());
+      return;
+    }
+    if (this._handleDuplicateInstanceTap(id, renderKey)) return;
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)

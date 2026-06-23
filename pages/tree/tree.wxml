@@ -105,7 +105,7 @@
             <view class="node-border-edge bottom" style="background:{{item.nodeBorderColor}};"></view>
             <view class="node-border-edge left" style="background:{{item.nodeBorderColor}};"></view>
             <view wx:if="{{!showTimeline}}" class="node-border-edge right" style="background:{{item.nodeBorderColor}};"></view>
-            <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}" data-duplicate="{{item.isDuplicatePlaceholder ? 1 : 0}}" data-render-key="{{item.renderKey}}">
+            <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}" data-duplicate="{{item.isDuplicatePlaceholder ? 1 : 0}}" data-render-key="{{item.renderKey}}" data-instance-key="{{item.duplicateInstanceKey}}">
                <view wx:if="{{showTimeline && item.timelineIconHasExtra}}" class="timeline-icon-fill" style="width:{{item.timelineIconFillW || 0}}rpx; background:{{item.nodeFillColor}};"></view>
                <image wx:if="{{item.iconSrc}}" class="node-icon-img {{item.iconType === 'marriage' || item.iconType === 'marriageCollapsed' ? 'marriage-icon-img' : ''}}" src="{{item.iconSrc}}" mode="aspectFit"></image>
                <view wx:elif="{{item.duplicatePointerSymbol}}" class="duplicate-pointer-icon duplicate-pointer-{{item.duplicatePointerDirection}}">{{item.duplicatePointerSymbol}}</view>
