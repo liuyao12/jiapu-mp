@@ -159,8 +159,6 @@ Page({
     screenshotPreviewImageWidth: 0,
     screenshotPreviewImageHeight: 0,
     screenshotPreviewDrawerY: 0,
-    duplicateFlashId: '',
-    duplicateFlashOriginRenderKey: ''
   },
 
   // Non-reactive state cached here (not in this.data to avoid setData overhead)
@@ -171,7 +169,6 @@ Page({
   _windowHeight: 667,
   _scrollLeftPx: 0,
   _scrollTopPx: 0,
-  _duplicateFlashTimer: null,
 
   // ─────────────────────────────────────────────
   // Lifecycle
@@ -1622,58 +1619,9 @@ Page({
       .filter(Boolean);
   },
 
-  _getDuplicateInstances(id) {
-    if (!id) return [];
-    return (this.data.nodes || []).filter(node => node && node.id === id && node.isDuplicateInstance);
-  },
-
-  _getDuplicateJumpTarget(id, originRenderKey = '') {
-    const instances = this._getDuplicateInstances(id);
-    if (instances.length <= 1) return null;
-    const originIndex = instances.findIndex(node => node.renderKey === originRenderKey);
-    if (originIndex >= 0) return instances[(originIndex + 1) % instances.length];
-    return instances[0];
-  },
-
-  _flashDuplicateInstances(id, originRenderKey = '') {
-    if (!id) return;
-    if (this._duplicateFlashTimer) {
-      clearTimeout(this._duplicateFlashTimer);
-      this._duplicateFlashTimer = null;
-    }
-    const applyFlash = () => {
-      this.setData({
-        duplicateFlashId: id,
-        duplicateFlashOriginRenderKey: originRenderKey || ''
-      });
-      this._duplicateFlashTimer = setTimeout(() => {
-        this._duplicateFlashTimer = null;
-        this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' });
-      }, 900);
-    };
-    if (this.data.duplicateFlashId) {
-      this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' }, applyFlash);
-    } else {
-      applyFlash();
-    }
-  },
-
-  _handleDuplicateInstanceTap(id, originRenderKey = '') {
-    const target = this._getDuplicateJumpTarget(id, originRenderKey);
-    if (!target) return false;
-    this._flashDuplicateInstances(id, originRenderKey);
-    this._scrollToTreeNode(id, { renderKey: target.renderKey, vertical: true, screenTopRpx: 120 });
-    return true;
-  },
-
   onNodeTap(e) {
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = e.id || dataset.id;
-    const renderKey = dataset.renderKey || '';
-    const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
-    const hasRenderedTapOrigin = !!renderKey || isDuplicateTap;
-    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
-    if ((hasRenderedTapOrigin && this._handleDuplicateInstanceTap(id, renderKey)) || isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) return;
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -3398,7 +3346,6 @@ Page({
       this.setData({ duplicateExpandedKeys: next }, () => this.refreshTree());
       return;
     }
-    if (this._handleDuplicateInstanceTap(id, renderKey)) return;
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
