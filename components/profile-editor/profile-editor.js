@@ -128,6 +128,7 @@ Component({
     showMotherStatic: false,
     showMotherEmpty: true,
     motherPickerCardClass: 'rel-card female',
+    motherPickerTriggerClass: 'picker-box invitation',
     motherStaticCardClass: 'rel-card female',
     motherPickerName: '',
     motherPickerYear: '',
@@ -1106,6 +1107,7 @@ Component({
       const selectedMotherId = localMother ? localMother.id : '';
       const selectedIndex = Math.max(0, range.findIndex(item => item && item.id === selectedMotherId));
       const cardClass = 'rel-card ' + currentGender + (pending ? ' pending-highlight' : '') + (localMother && localMother._otherTree ? ' external-tree' : '');
+      const triggerClass = hasPicker && !localMother && !pending ? 'picker-box invitation' : cardClass;
 
       return {
         showMotherPicker: hasPicker,
@@ -1114,6 +1116,7 @@ Component({
         showMotherStatic: !hasPicker && !!localMother,
         showMotherEmpty: !hasPicker && !localMother,
         motherPickerCardClass: cardClass,
+        motherPickerTriggerClass: triggerClass,
         motherStaticCardClass: localMother ? ('rel-card ' + (localMother.gender || 'female') + (localMother._otherTree ? ' external-tree' : '')) : 'rel-card female',
         motherPickerName: pickerName,
         motherPickerYear: pickerYear,
