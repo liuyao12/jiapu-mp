@@ -175,7 +175,7 @@
       <view class="rel-view-grid">
         <view class="rel-view-col">
           <text class="row-label">生母</text>
-          <view wx:if="{{showMotherPicker}}" class="birth-mother-picker" bindtap="openMotherMenu">
+          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker" mode="selector" value="{{motherPickerIndex}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
             <view wx:if="{{showMotherInvitation}}" class="picker-box invitation">选生母</view>
             <view wx:if="{{showMotherPickerCard}}" class="{{motherPickerCardClass}}">
               <view class="name-scroll-container">
