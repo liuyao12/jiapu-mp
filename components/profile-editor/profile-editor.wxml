@@ -53,8 +53,8 @@
       <view class="gender-section" catchtap="onStartEditGender">
         <text wx:if="{{showGenderDisplay && !showNameExpanded}}" class="{{genderDisplayClass}}">{{genderLabel}}</text>
         <radio-group wx:if="{{showGenderEditor || showNameExpanded}}" bindchange="onUpdate" data-f="gender" class="gender-radio-group">
-          <label class="{{maleGenderClass}}"><radio value="male" checked="{{isMale}}"/>男</label>
-          <label class="{{femaleGenderClass}}"><radio value="female" checked="{{isFemale}}"/>女</label>
+          <label class="{{maleGenderClass}}"><radio class="gender-radio" value="male" checked="{{isMale}}"/>男</label>
+          <label class="{{femaleGenderClass}}"><radio class="gender-radio" value="female" checked="{{isFemale}}"/>女</label>
         </radio-group>
       </view>
     </view>
@@ -175,17 +175,11 @@
       <view class="rel-view-grid">
         <view class="rel-view-col">
           <text class="row-label">生母</text>
-          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
-            <view wx:if="{{showMotherInvitation}}" class="picker-box invitation">选生母</view>
-            <view wx:if="{{showMotherPickerCard}}" class="{{motherPickerCardClass}}">
-              <view class="name-scroll-container">
-                <view class="rel-label-scroll">
-                  <text class="rel-name-txt">{{motherPickerName}}</text>
-                  <text wx:if="{{motherPickerRank}}" class="rel-rank-txt"> ({{motherPickerRank}})</text>
-                  <text wx:if="{{motherPickerYear}}" class="rel-year-inline">{{motherPickerYear}}</text>
-                </view>
-              </view>
-            </view>
+          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker {{motherPickerTriggerClass}}" mode="selector" value="{{motherPickerIndex}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
+            <text wx:if="{{showMotherInvitation}}">选生母</text>
+            <text wx:else class="rel-name-txt">{{motherPickerName}}</text>
+            <text wx:if="{{showMotherPickerCard && motherPickerRank}}" class="rel-rank-txt"> ({{motherPickerRank}})</text>
+            <text wx:if="{{showMotherPickerCard && motherPickerYear}}" class="rel-year-inline">{{motherPickerYear}}</text>
           </picker>
 
           <view wx:if="{{showMotherStatic}}" class="{{motherStaticCardClass}}">
