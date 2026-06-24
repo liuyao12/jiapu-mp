@@ -175,15 +175,12 @@
       <view class="rel-view-grid">
         <view class="rel-view-col">
           <text class="row-label">生母</text>
-          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker" mode="selector" value="{{motherPickerIndex}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
-            <view class="{{motherPickerTriggerClass}}">
-              <text wx:if="{{showMotherInvitation}}">选生母</text>
-              <text wx:else class="rel-name-txt">{{motherPickerName}}</text>
-              <text wx:if="{{showMotherPickerCard && motherPickerRank}}" class="rel-rank-txt"> ({{motherPickerRank}})</text>
-              <text wx:if="{{showMotherPickerCard && motherPickerYear}}" class="rel-year-inline">{{motherPickerYear}}</text>
-            </view>
-          </view>
-
+          <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker {{motherPickerTriggerClass}}" mode="selector" value="{{motherPickerIndex}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
+            <text wx:if="{{showMotherInvitation}}">选生母</text>
+            <text wx:else class="rel-name-txt">{{motherPickerName}}</text>
+            <text wx:if="{{showMotherPickerCard && motherPickerRank}}" class="rel-rank-txt"> ({{motherPickerRank}})</text>
+            <text wx:if="{{showMotherPickerCard && motherPickerYear}}" class="rel-year-inline">{{motherPickerYear}}</text>
+          </picker>
 
           <view wx:if="{{showMotherStatic}}" class="{{motherStaticCardClass}}">
             <view class="name-scroll-container" bindtap="onJump" data-id="{{localMotherId}}">
