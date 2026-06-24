@@ -127,10 +127,12 @@ Component({
     showMotherStatic: false,
     showMotherEmpty: true,
     motherPickerCardClass: 'rel-card female',
+    motherPickerTriggerClass: 'picker-box invitation',
     motherStaticCardClass: 'rel-card female',
     motherPickerName: '',
     motherPickerYear: '',
     motherPickerRank: '',
+    motherPickerIndex: 0,
     motherStaticName: '',
     motherStaticYear: '',
     motherStaticRank: '',
@@ -1101,7 +1103,10 @@ Component({
       const pickerName = localMother ? localMother._displayName : (this.properties.currentMotherName || '');
       const pickerYear = localMother ? (localMother._displayYear || localMother.bYear || '') : '';
       const pickerRank = localMother ? this._normalizeRankText(localMother.rank) : '';
+      const selectedMotherId = localMother ? localMother.id : '';
+      const selectedIndex = Math.max(0, range.findIndex(item => item && item.id === selectedMotherId));
       const cardClass = 'rel-card ' + currentGender + (pending ? ' pending-highlight' : '') + (localMother && localMother._otherTree ? ' external-tree' : '');
+      const triggerClass = hasPicker && !localMother && !pending ? 'picker-box invitation' : cardClass;
 
       return {
         showMotherPicker: hasPicker,
@@ -1110,10 +1115,12 @@ Component({
         showMotherStatic: !hasPicker && !!localMother,
         showMotherEmpty: !hasPicker && !localMother,
         motherPickerCardClass: cardClass,
+        motherPickerTriggerClass: triggerClass,
         motherStaticCardClass: localMother ? ('rel-card ' + (localMother.gender || 'female') + (localMother._otherTree ? ' external-tree' : '')) : 'rel-card female',
         motherPickerName: pickerName,
         motherPickerYear: pickerYear,
         motherPickerRank: pickerRank,
+        motherPickerIndex: selectedIndex,
         motherStaticName: localMother ? localMother._displayName : '',
         motherStaticYear: localMother ? (localMother._displayYear || localMother.bYear || '') : '',
         motherStaticRank: localMother ? this._normalizeRankText(localMother.rank) : '',
