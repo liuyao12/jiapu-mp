@@ -400,7 +400,7 @@ view, text, input {
 .gender-btn { font-size: 24rpx; padding: 10rpx 20rpx; border-radius: 30rpx; border: 1rpx solid #eee; margin-right: 10rpx; font-family: "SimSun", "Songti SC", "STSong", serif; font-weight: normal; }
 .gender-btn.active.male { background: #bbdefb; color: #0d47a1 !important; border-color: rgba(0,0,0,0.05); }
 .gender-btn.active.female { background: #fce4ec; color: #880e4f !important; border-color: rgba(0,0,0,0.05); }
-.gender-btn radio { display: none; }
+.gender-radio { display: none; }
 
 /* Relationships Grid */
 .rel-view-grid { display: flex; flex-direction: row; gap: 20rpx; margin-top: 15rpx; padding-bottom: 150rpx; }

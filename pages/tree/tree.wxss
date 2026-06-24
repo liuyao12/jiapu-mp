@@ -975,7 +975,7 @@ text, view, button, input { font-weight: normal !important; }
 }
 .timeline-event-check { flex: 0 0 48rpx; display: flex; align-items: center; justify-content: center; }
 .timeline-event-checkbox-label { display: flex; align-items: center; justify-content: center; width: 48rpx; height: 52rpx; }
-.timeline-event-checkbox-label checkbox { transform: scale(0.72); }
+.timeline-event-checkbox { transform: scale(0.72); }
 .timeline-event-swatch {
   display: none;
   flex: 0 0 10rpx;

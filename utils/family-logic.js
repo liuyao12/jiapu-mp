@@ -1353,7 +1353,7 @@ function calculateLayout(db, config) {
     maxR = Math.max(maxR, startX + (displayName.length * 30) + 350);
     const isCollapsedForLayout = (collapsedNodes || []).includes(id);
     if (!isCollapsedForLayout) {
-      const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid) && !isRelationHidden(renderKey, sid)) : [];
+      const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid) && !isRelationHidden(id, sid)) : [];
       if (sIds.length) {
         sIds.forEach(sid => {
           const s = db.people[sid]; if (s) {
@@ -1490,7 +1490,7 @@ function calculateLayout(db, config) {
     // CRITICAL: Use the 'id' parameter (db key) instead of p.id to ensure consistency
     // p.id might not match the db key if there was a data inconsistency
     nodes.push({
-      id: id, renderKey: id, name: displayParts.name, rank: displayParts.rank, gender: p.gender || 'unknown',
+      id: id, renderKey: renderKey || id, name: displayParts.name, rank: displayParts.rank, gender: p.gender || 'unknown',
       lineage,
       isLiving: isLivingPerson(p),
       nameText: displayParts.nameText,

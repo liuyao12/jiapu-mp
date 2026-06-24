@@ -53,8 +53,8 @@
       <view class="gender-section" catchtap="onStartEditGender">
         <text wx:if="{{showGenderDisplay && !showNameExpanded}}" class="{{genderDisplayClass}}">{{genderLabel}}</text>
         <radio-group wx:if="{{showGenderEditor || showNameExpanded}}" bindchange="onUpdate" data-f="gender" class="gender-radio-group">
-          <label class="{{maleGenderClass}}"><radio value="male" checked="{{isMale}}"/>男</label>
-          <label class="{{femaleGenderClass}}"><radio value="female" checked="{{isFemale}}"/>女</label>
+          <label class="{{maleGenderClass}}"><radio class="gender-radio" value="male" checked="{{isMale}}"/>男</label>
+          <label class="{{femaleGenderClass}}"><radio class="gender-radio" value="female" checked="{{isFemale}}"/>女</label>
         </radio-group>
       </view>
     </view>
