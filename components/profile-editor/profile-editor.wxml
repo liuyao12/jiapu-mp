@@ -178,7 +178,7 @@
           <picker wx:if="{{showMotherPicker}}" class="birth-mother-picker" mode="selector" value="{{motherPickerIndex}}" bindchange="onMotherChange" range="{{motherRange}}" range-key="label">
             <view class="birth-mother-picker-trigger">
               <view wx:if="{{showMotherInvitation}}" class="picker-box invitation">选生母</view>
-              <view wx:if="{{showMotherPickerCard}}" class="{{motherPickerCardClass}}">
+              <view wx:else class="{{motherPickerCardClass}}">
                 <view class="name-scroll-container">
                   <view class="rel-label-scroll">
                     <text class="rel-name-txt">{{motherPickerName}}</text>
