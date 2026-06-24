@@ -131,6 +131,7 @@ Component({
     motherPickerName: '',
     motherPickerYear: '',
     motherPickerRank: '',
+    motherPickerIndex: 0,
     motherStaticName: '',
     motherStaticYear: '',
     motherStaticRank: '',
@@ -1101,6 +1102,8 @@ Component({
       const pickerName = localMother ? localMother._displayName : (this.properties.currentMotherName || '');
       const pickerYear = localMother ? (localMother._displayYear || localMother.bYear || '') : '';
       const pickerRank = localMother ? this._normalizeRankText(localMother.rank) : '';
+      const selectedMotherId = localMother ? localMother.id : '';
+      const selectedIndex = Math.max(0, range.findIndex(item => item && item.id === selectedMotherId));
       const cardClass = 'rel-card ' + currentGender + (pending ? ' pending-highlight' : '') + (localMother && localMother._otherTree ? ' external-tree' : '');
 
       return {
@@ -1114,6 +1117,7 @@ Component({
         motherPickerName: pickerName,
         motherPickerYear: pickerYear,
         motherPickerRank: pickerRank,
+        motherPickerIndex: selectedIndex,
         motherStaticName: localMother ? localMother._displayName : '',
         motherStaticYear: localMother ? (localMother._displayYear || localMother.bYear || '') : '',
         motherStaticRank: localMother ? this._normalizeRankText(localMother.rank) : '',
