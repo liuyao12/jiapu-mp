@@ -124,6 +124,7 @@ Component({
     showMotherPicker: false,
     showMotherInvitation: false,
     showMotherPickerCard: false,
+    showMotherMenu: false,
     showMotherStatic: false,
     showMotherEmpty: true,
     motherPickerCardClass: 'rel-card female',
@@ -1543,6 +1544,25 @@ Component({
         return;
       }
       this._applyFieldChange(field, value);
+    },
+
+    openMotherMenu() {
+      if (!this.data.showMotherPicker) return;
+      this.setData({ showMotherMenu: true });
+    },
+
+    closeMotherMenu() {
+      this.setData({ showMotherMenu: false });
+    },
+
+    catchTap() {},
+
+    onMotherMenuSelect(e) {
+      const value = Number(e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.index);
+      if (!Number.isFinite(value)) return;
+      this._markChanged('motherId');
+      this.setData({ showMotherMenu: false });
+      this.triggerEvent('motherchange', { value });
     },
 
     onMotherChange(e) {

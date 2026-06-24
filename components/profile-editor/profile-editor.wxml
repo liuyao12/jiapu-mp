@@ -188,7 +188,8 @@
                 </view>
               </view>
             </view>
-          </picker>
+          </view>
+
 
           <view wx:if="{{showMotherStatic}}" class="{{motherStaticCardClass}}">
             <view class="name-scroll-container" bindtap="onJump" data-id="{{localMotherId}}">
@@ -249,4 +250,16 @@
       <view wx:if="{{deleteVisible}}" class="del-btn-archive" bindtap="onDelete">永久删除成员</view>
     </view>
   </scroll-view>
+</view>
+
+<view wx:if="{{showMotherMenu}}" class="birth-mother-menu-mask" bindtap="closeMotherMenu">
+  <view class="birth-mother-menu" catchtap="catchTap">
+    <view class="birth-mother-menu-title">选择生母</view>
+    <scroll-view class="birth-mother-menu-list" scroll-y>
+      <view wx:for="{{motherRange}}" wx:key="id" class="birth-mother-menu-item {{item.id == localMotherId ? 'active' : ''}}" data-index="{{index}}" catchtap="onMotherMenuSelect">
+        <text>{{item.label}}</text>
+      </view>
+    </scroll-view>
+    <button class="birth-mother-menu-cancel" bindtap="closeMotherMenu">取消</button>
+  </view>
 </view>
