@@ -98,11 +98,12 @@ Page({
     treeTopGap: TREE_STYLE.timelineBaseTopGap,
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
-    collapsedNodes: [], duplicateExpandedKeys: [], hiddenTreeIds: [], showDrawer: false,
+    collapsedNodes: [], duplicateExpandedKeys: [], hiddenTreeIds: [], hiddenRelationKeys: [], showDrawer: false,
     canToggleRelationVisibility: false,
     showEmptyTree: false,
     showTreeArea: false,
     editingId: '',
+    editingRenderKey: '',
     draftPerson: {},
     _editingPerson: {},
     _pendingEdits: {},
@@ -867,7 +868,8 @@ Page({
         showMaternal,
         collapsedNodes: nextCollapsedNodes,
         duplicateExpandedKeys: this.data.duplicateExpandedKeys || [],
-        hiddenTreeIds: db.hiddenTreeIds || []
+        hiddenTreeIds: db.hiddenTreeIds || [],
+        hiddenRelationKeys: db.hiddenRelationKeys || []
       };
       const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
       const visibleProfileRange = this._getProfileYearRangeFromNodes(db, standard.nodes || []);
@@ -1481,14 +1483,25 @@ Page({
     return p;
   },
 
-  _decorateProfilePerson(person) {
+  _decorateProfilePerson(person, relationParentKey = '') {
     if (!person) return null;
     const p = this._withEditableNameParts(person);
     p._displayName = this._computeDisplayName(p);
     p._displayYear = p.bYear || '';
-    p._treeHidden = this._isTreeIdHidden(p.id);
+    p._treeHidden = relationParentKey ? this._isTreeRelationHidden(relationParentKey, p.id) : this._isTreeIdHidden(p.id);
     p._otherTree = this._isOutsideCurrentProgenitor(p);
     return p;
+  },
+
+
+  _relationInstanceKey(parentRenderKey, relationId) {
+    return `${parentRenderKey || ''}>${relationId || ''}`;
+  },
+
+  _isTreeRelationHidden(parentRenderKey, relationId) {
+    if (!parentRenderKey || !relationId) return false;
+    const dbHidden = this.data.db && Array.isArray(this.data.db.hiddenRelationKeys) ? this.data.db.hiddenRelationKeys : [];
+    return dbHidden.includes(this._relationInstanceKey(parentRenderKey, relationId));
   },
 
   _isTreeIdHidden(id) {
@@ -1502,17 +1515,18 @@ Page({
     const people = (this.data.db && this.data.db.people) || {};
     const p = id && people[id];
     if (!p) return {};
+    const relationParentKey = this.data.editingRenderKey || id;
     const spouseObjects = (p.spouses || []).map(sid => people[sid] ? { ...people[sid], id: people[sid].id || sid } : null).filter(Boolean);
     return {
-      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
-      _displayChildren: this._buildProfileChildren(id, p)
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s, relationParentKey)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p, relationParentKey)
     };
   },
 
   _canToggleProfileRelationVisibility(id) {
     if (!id) return false;
     return (this.data.nodes || []).some(node => (
-      node && node.id === id && !node.isSpouse && !node.isDuplicatePlaceholder
+      node && node.id === id && !node.isSpouse
     ));
   },
 
@@ -1521,16 +1535,19 @@ Page({
     const id = detail.id;
     if (!id || !this.data.canToggleRelationVisibility) return;
     const db = JSON.parse(JSON.stringify(this.data.db || { activeRootId: null, people: {} }));
-    const hidden = Array.isArray(db.hiddenTreeIds) ? [...db.hiddenTreeIds] : [...(this.data.hiddenTreeIds || [])];
-    const index = hidden.indexOf(id);
+    const parentKey = this.data.editingRenderKey || this.data.editingId || '';
+    const relationKey = this._relationInstanceKey(parentKey, id);
+    const hidden = Array.isArray(db.hiddenRelationKeys) ? [...db.hiddenRelationKeys] : [];
+    const index = hidden.indexOf(relationKey);
     if (index >= 0) hidden.splice(index, 1);
-    else hidden.push(id);
-    db.hiddenTreeIds = hidden.filter(hiddenId => db.people && db.people[hiddenId]);
+    else hidden.push(relationKey);
+    db.hiddenRelationKeys = hidden;
     this._layoutCache = { standard: null, timeline: null };
     this._saveData(db);
     this.setData({
       db,
-      hiddenTreeIds: db.hiddenTreeIds
+      hiddenTreeIds: db.hiddenTreeIds || [],
+      hiddenRelationKeys: db.hiddenRelationKeys || []
     }, () => {
       this.setData(this._profileRelationDisplayPatch(this.data.editingId), () => this.refreshTree());
     });
@@ -1588,7 +1605,7 @@ Page({
     return rows;
   },
 
-  _buildProfileChildren(personId, person) {
+  _buildProfileChildren(personId, person, relationParentKey = '') {
     const db = this.data.db || {};
     const people = db.people || {};
     const p = person || people[personId];
@@ -1611,7 +1628,7 @@ Page({
 
     return childIds
       .map(childId => {
-        const child = this._decorateProfilePerson({ ...people[childId], id: people[childId].id || childId });
+        const child = this._decorateProfilePerson({ ...people[childId], id: people[childId].id || childId }, relationParentKey);
         return child && p.gender === 'female'
           ? { ...child, _disableReorder: true }
           : child;
@@ -1622,6 +1639,7 @@ Page({
   onNodeTap(e) {
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = e.id || dataset.id;
+    const renderKey = dataset.renderKey || id;
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -1656,6 +1674,7 @@ Page({
 
     this.setData({
       editingId: id,
+      editingRenderKey: renderKey,
       draftPerson: {},
       _editingPerson: this._decorateProfilePerson({ ...p, id: p.id || id }),
       _pendingEdits: {},
@@ -1663,8 +1682,8 @@ Page({
       showDrawer: true,
       canAddChild: p.gender === 'male',
       canToggleRelationVisibility: this._canToggleProfileRelationVisibility(id),
-      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
-      _displayChildren: this._buildProfileChildren(id, p),
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s, renderKey)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p, renderKey),
       _displayFather: displayFather,
       _displayMother: motherNode ? this._decorateProfilePerson(motherNode) : null,
       _displayPaternalRows: this._buildPaternalRows(id),
@@ -1720,6 +1739,7 @@ Page({
       collapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...this._rootSwitchScrollPatch(),
       ...this._emptyProfileContext()
@@ -2813,6 +2833,7 @@ Page({
       workspaceDeleteOpenId: '',
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...this._emptyProfileContext()
     }, () => {
@@ -3280,6 +3301,7 @@ Page({
       collapsedNodes: nextCollapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -3308,6 +3330,7 @@ Page({
     this.setData({
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -3390,6 +3413,7 @@ Page({
       collapsedNodes: [],
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...((sampleDef && sampleDef.viewOptions) || {}),
       ...this._emptyProfileContext()
@@ -4139,6 +4163,7 @@ Page({
 
     this.setData({
       editingId: '',
+      editingRenderKey: '',
       draftPerson,
       _editingPerson: { ...draftPerson },
       showDrawer: true,
@@ -4765,6 +4790,7 @@ Page({
       collapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -6028,6 +6054,7 @@ Page({
       collapsedNodes: [],
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       _editingPerson: {},
       _pendingEdits: {},
