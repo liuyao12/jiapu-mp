@@ -105,10 +105,9 @@
             <view class="node-border-edge bottom" style="background:{{item.nodeBorderColor}};"></view>
             <view class="node-border-edge left" style="background:{{item.nodeBorderColor}};"></view>
             <view wx:if="{{!showTimeline}}" class="node-border-edge right" style="background:{{item.nodeBorderColor}};"></view>
-            <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}" data-duplicate="{{item.isDuplicatePlaceholder ? 1 : 0}}" data-render-key="{{item.renderKey}}">
+            <view class="icon-box {{item.timelineIconHasExtra ? 'has-extra-boundary' : ''}}" style="left:{{showTimeline ? (item.timelineIconBoxLeft || 0) : 18}}rpx;" catchtap="onToggleCollapse" data-id="{{item.id}}" data-duplicate="{{item.isDuplicatePlaceholder ? 1 : 0}}" data-render-key="{{item.renderKey}}" data-instance-key="{{item.duplicateInstanceKey}}">
                <view wx:if="{{showTimeline && item.timelineIconHasExtra}}" class="timeline-icon-fill" style="width:{{item.timelineIconFillW || 0}}rpx; background:{{item.nodeFillColor}};"></view>
                <image wx:if="{{item.iconSrc}}" class="node-icon-img {{item.iconType === 'marriage' || item.iconType === 'marriageCollapsed' ? 'marriage-icon-img' : ''}}" src="{{item.iconSrc}}" mode="aspectFit"></image>
-               <view wx:elif="{{item.duplicatePointerSymbol}}" class="duplicate-pointer-icon duplicate-pointer-{{item.duplicatePointerDirection}}">{{item.duplicatePointerSymbol}}</view>
             </view>
             <view class="p-label" style="margin-left:{{item.labelMarginLeft}}rpx;">
               <text wx:if="{{item.hometownPrefix}}" class="p-hometown" style="color:{{treeStyle.nameColor}};">{{item.hometownPrefix}}{{item.nameSeparator}}</text>
@@ -276,31 +275,73 @@
         <button class="spouse-picker-close" bindtap="closeSpousePicker">×</button>
       </view>
       <text class="spouse-picker-hint">{{spousePickerHint}}</text>
-      <scroll-view class="spouse-picker-list" scroll-y>
+      <view class="spouse-picker-carousel">
         <view wx:if="{{spousePickerResults.length === 0}}" class="spouse-picker-empty">
           <text>没有可选成员</text>
         </view>
-        <view
-          wx:for="{{spousePickerResults}}"
-          wx:key="id"
-          class="spouse-picker-item {{item.gender || 'unknown'}}"
-          catchtap="onSelectExistingSpouse"
-          data-id="{{item.id}}"
+        <swiper
+          wx:else
+          class="spouse-picker-swiper"
+          current="{{spousePickerCurrentIndex}}"
+          bindchange="onSpousePickerSwipe"
+          indicator-dots="{{spousePickerResults.length > 1}}"
+          circular="{{spousePickerResults.length > 1}}"
         >
-          <view class="spouse-picker-person">
-            <view class="spouse-picker-name-row">
-              <text class="spouse-picker-name">{{item._displayName}}</text>
-              <text wx:if="{{item._lifeLabel}}" class="spouse-picker-life">{{item._lifeLabel}}</text>
-            </view>
-            <view class="spouse-picker-meta-row">
-              <text class="spouse-picker-chip {{item._workspaceRank === 0 ? 'current' : 'other'}}">{{item._workspaceLabel}}</text>
-              <text wx:if="{{item._progenitorName}}" class="spouse-picker-root">{{item._progenitorName}}</text>
-            </view>
-          </view>
-          <text class="spouse-picker-action">选择</text>
-        </view>
-      </scroll-view>
-      <button class="spouse-picker-new" bindtap="onContinueNewSpouse">{{spousePickerNewLabel}}</button>
+          <swiper-item wx:for="{{spousePickerResults}}" wx:key="id">
+            <scroll-view class="spouse-picker-card-scroll" scroll-y>
+              <view class="spouse-picker-profile-card {{item.gender || 'unknown'}}">
+                <view class="spouse-picker-count">{{index + 1}} / {{spousePickerResults.length}}</view>
+                <view class="spouse-picker-profile-main">
+                  <view class="spouse-picker-name-row">
+                    <text class="spouse-picker-name">{{item._displayName}}</text>
+                    <text wx:if="{{item._lifeLabel}}" class="spouse-picker-life">{{item._lifeLabel}}</text>
+                  </view>
+                  <view class="spouse-picker-meta-row">
+                    <text class="spouse-picker-chip {{item._workspaceRank === 0 ? 'current' : 'other'}}">{{item._workspaceLabel}}</text>
+                    <text wx:if="{{item._progenitorName}}" class="spouse-picker-root">{{item._progenitorName}}</text>
+                  </view>
+                </view>
+
+                <view wx:if="{{item._preview.paternalRows.length}}" class="spouse-picker-preview-section">
+                  <view wx:for="{{item._preview.paternalRows}}" wx:for-item="ancestor" wx:key="id" class="spouse-picker-relation-row">
+                    <text class="spouse-picker-relation-label">{{ancestor.label}}</text>
+                    <view class="spouse-picker-mini-card {{ancestor.gender || 'unknown'}}">
+                      <text class="spouse-picker-mini-name">{{ancestor._displayName}}</text>
+                      <text wx:if="{{ancestor.rankText}}" class="spouse-picker-mini-rank"> ({{ancestor.rankText}})</text>
+                      <text wx:if="{{ancestor.yearText}}" class="spouse-picker-mini-year">{{ancestor.yearText}}</text>
+                    </view>
+                  </view>
+                </view>
+
+                <view class="spouse-picker-preview-grid">
+                  <view class="spouse-picker-preview-col">
+                    <text class="spouse-picker-section-title">配偶</text>
+                    <view wx:if="{{!item._preview.spouses.length}}" class="spouse-picker-none">无</view>
+                    <view wx:for="{{item._preview.spouses}}" wx:for-item="spouse" wx:key="id" class="spouse-picker-mini-card {{spouse.gender || 'unknown'}}">
+                      <text class="spouse-picker-mini-name">{{spouse._displayName}}</text>
+                      <text wx:if="{{spouse.rankText}}" class="spouse-picker-mini-rank"> ({{spouse.rankText}})</text>
+                      <text wx:if="{{spouse.yearText}}" class="spouse-picker-mini-year">{{spouse.yearText}}</text>
+                    </view>
+                  </view>
+                  <view class="spouse-picker-preview-col">
+                    <text class="spouse-picker-section-title">子女</text>
+                    <view wx:if="{{!item._preview.children.length}}" class="spouse-picker-none">无</view>
+                    <view wx:for="{{item._preview.children}}" wx:for-item="child" wx:key="id" class="spouse-picker-mini-card {{child.gender || 'unknown'}}">
+                      <text class="spouse-picker-mini-name">{{child._displayName}}</text>
+                      <text wx:if="{{child.rankText}}" class="spouse-picker-mini-rank"> ({{child.rankText}})</text>
+                      <text wx:if="{{child.yearText}}" class="spouse-picker-mini-year">{{child.yearText}}</text>
+                    </view>
+                  </view>
+                </view>
+              </view>
+            </scroll-view>
+          </swiper-item>
+        </swiper>
+      </view>
+      <view class="spouse-picker-footer">
+        <button class="spouse-picker-new" bindtap="onContinueNewSpouse">{{spousePickerNewLabel}}</button>
+        <button wx:if="{{spousePickerResults.length > 0}}" class="spouse-picker-confirm" bindtap="onConfirmCurrentExistingSpouse">确认选用</button>
+      </view>
     </view>
   </view>
 
