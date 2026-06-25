@@ -133,7 +133,8 @@ module.exports = {
         "tan_imp_001-AAF"
       ],
       "spouses": [
-        "tan_wuz_001-"
+        "tan_wuz_001-",
+        "tan_shg_001-"
       ],
       "events": [
         {
@@ -231,7 +232,6 @@ module.exports = {
       "workspaceId": "sample_tang_imperial",
       "children": [
         "tan_imp_001-AAAB",
-        "tan_imp_001-AAAC",
         "tan_imp_001-AAAA"
       ],
       "spouses": [
@@ -279,22 +279,6 @@ module.exports = {
       "rank": "三",
       "bYear": "682",
       "dYear": "707"
-    },
-    "tan_imp_001-AAAC": {
-      "id": "tan_imp_001-AAAC",
-      "gender": "female",
-      "isLiving": false,
-      "workspaceId": "sample_tang_imperial",
-      "children": [],
-      "spouses": [],
-      "events": [],
-      "name": "安乐公主 李裹儿",
-      "hometown": "陇西狄道",
-      "surname": "李",
-      "firstname": "裹儿",
-      "bYear": "684",
-      "dYear": "710",
-      "motherId": "tan_wei_001-"
     },
     "tan_imp_001-AAAA": {
       "id": "tan_imp_001-AAAA",
@@ -444,9 +428,7 @@ module.exports = {
       "children": [
         "tan_imp_001-AABAAA"
       ],
-      "spouses": [
-        "tan_zhg_001-"
-      ],
+      "spouses": [],
       "events": [
         {
           "id": "tang_emperor_suzong",
@@ -938,7 +920,7 @@ module.exports = {
           "year": "626-636"
         }
       ],
-      "name": "(唐)文德皇后 长孙氏",
+      "name": "文德皇后 长孙氏",
       "hometown": "河南洛阳",
       "surname": "长孙",
       "bYear": "601",
@@ -960,7 +942,7 @@ module.exports = {
           "year": "684, 705-710"
         }
       ],
-      "name": "(唐)皇后 韦氏",
+      "name": "皇后 韦氏",
       "hometown": "京兆万年",
       "surname": "韦",
       "dYear": "710"
@@ -981,33 +963,28 @@ module.exports = {
           "year": "745-756"
         }
       ],
-      "name": "(唐)贵妃 杨玉环",
+      "name": "贵妃 杨玉环",
       "hometown": "河东永乐",
       "surname": "杨",
       "firstname": "玉环",
       "bYear": "719",
       "dYear": "756"
     },
-    "tan_zhg_001-": {
-      "id": "tan_zhg_001-",
+    "tan_shg_001-": {
+      "id": "tan_shg_001-",
       "gender": "female",
       "isLiving": false,
       "workspaceId": "sample_tang_imperial",
       "children": [],
       "spouses": [
-        "tan_imp_001-AABAA"
+        "tan_imp_001-AA"
       ],
-      "events": [
-        {
-          "id": "tang_empress_zhang",
-          "name": "皇后",
-          "year": "758-762"
-        }
-      ],
-      "name": "(唐)皇后 张氏",
-      "hometown": "南阳向城",
-      "surname": "张",
-      "dYear": "762"
+      "events": [],
+      "name": "昭容 上官婉儿",
+      "surname": "上官",
+      "firstname": "婉儿",
+      "bYear": "664",
+      "dYear": "710"
     }
   },
   "timelineEvents": [
@@ -1018,9 +995,21 @@ module.exports = {
       "workspaceId": "sample_tang_imperial"
     },
     {
-      "id": "evt_tang_shenlong",
-      "name": "神龙革命",
-      "year": "705",
+      "id": "evt_tang_xuanwu_gate",
+      "name": "玄武门之变",
+      "year": "626",
+      "workspaceId": "sample_tang_imperial"
+    },
+    {
+      "id": "evt_wu_zhou",
+      "name": "武周",
+      "year": "690-705",
+      "workspaceId": "sample_tang_imperial"
+    },
+    {
+      "id": "evt_tang_tanglong",
+      "name": "唐隆之变",
+      "year": "710",
       "workspaceId": "sample_tang_imperial"
     },
     {
@@ -1060,4 +1049,4 @@ module.exports = {
       "workspaceId": "sample_tang_imperial"
     }
   ]
-};
+}
