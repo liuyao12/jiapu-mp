@@ -98,11 +98,12 @@ Page({
     treeTopGap: TREE_STYLE.timelineBaseTopGap,
     treeContentBottomPadding: TREE_STYLE.treeContentBottomPadding,
     showTimeline: false, showSpouses: true, showMaternal: false,
-    collapsedNodes: [], hiddenTreeIds: [], showDrawer: false,
+    collapsedNodes: [], duplicateExpandedKeys: [], hiddenTreeIds: [], hiddenRelationKeys: [], showDrawer: false,
     canToggleRelationVisibility: false,
     showEmptyTree: false,
     showTreeArea: false,
     editingId: '',
+    editingRenderKey: '',
     draftPerson: {},
     _editingPerson: {},
     _pendingEdits: {},
@@ -134,6 +135,7 @@ Page({
     showSpousePicker: false,
     spousePickerQuery: '',
     spousePickerResults: [],
+    spousePickerCurrentIndex: 0,
     spousePickerTargetId: '',
     spousePickerTargetName: '',
     spousePickerMode: '',
@@ -158,8 +160,6 @@ Page({
     screenshotPreviewImageWidth: 0,
     screenshotPreviewImageHeight: 0,
     screenshotPreviewDrawerY: 0,
-    duplicateFlashId: '',
-    duplicateFlashOriginRenderKey: ''
   },
 
   // Non-reactive state cached here (not in this.data to avoid setData overhead)
@@ -170,7 +170,6 @@ Page({
   _windowHeight: 667,
   _scrollLeftPx: 0,
   _scrollTopPx: 0,
-  _duplicateFlashTimer: null,
 
   // ─────────────────────────────────────────────
   // Lifecycle
@@ -868,7 +867,9 @@ Page({
         showSpouses,
         showMaternal,
         collapsedNodes: nextCollapsedNodes,
-        hiddenTreeIds: db.hiddenTreeIds || []
+        duplicateExpandedKeys: this.data.duplicateExpandedKeys || [],
+        hiddenTreeIds: db.hiddenTreeIds || [],
+        hiddenRelationKeys: db.hiddenRelationKeys || []
       };
       const standard = Logic.calculateLayout(db, { ...common, showTimeline: false });
       const visibleProfileRange = this._getProfileYearRangeFromNodes(db, standard.nodes || []);
@@ -1012,25 +1013,8 @@ Page({
       if (node && node.id) counts[node.id] = (counts[node.id] || 0) + 1;
       return counts;
     }, {});
-    const primaryDuplicateById = (nodes || []).reduce((map, node) => {
-      if (node && node.id && !node.isDuplicatePlaceholder && idCounts[node.id] > 1 && !map[node.id]) {
-        map[node.id] = node;
-      }
-      return map;
-    }, {});
     return (nodes || []).map(node => {
-      const duplicatePrimary = node.isDuplicatePlaceholder ? primaryDuplicateById[node.id] : null;
-      const duplicatePointerDirection = duplicatePrimary
-        ? (Number(duplicatePrimary.y || 0) < Number(node.y || 0) ? 'up' : 'down')
-        : '';
-      const duplicatePointerSymbol = duplicatePointerDirection === 'up'
-        ? '☝'
-        : duplicatePointerDirection === 'down'
-          ? '☟'
-          : '';
-      const displayIconType = duplicatePointerDirection
-        ? `duplicate-${duplicatePointerDirection}`
-        : node.iconType;
+      const displayIconType = node.iconType;
       const nodeFillColor = node.gender === 'male'
         ? TREE_STYLE.maleFill
         : node.gender === 'female'
@@ -1061,8 +1045,6 @@ Page({
         ...node,
         iconType: displayIconType,
         originalIconType: node.iconType,
-        duplicatePointerDirection,
-        duplicatePointerSymbol,
         iconColor: node.iconType === 'marriage' ? this._getLineageToneColor(node.lineage) : TREE_STYLE.iconBorderColor,
         iconSrc: getTreeIconSrc(displayIconType, node.lineage),
         isDuplicateInstance: !!(node.id && idCounts[node.id] > 1),
@@ -1501,14 +1483,25 @@ Page({
     return p;
   },
 
-  _decorateProfilePerson(person) {
+  _decorateProfilePerson(person, relationParentKey = '') {
     if (!person) return null;
     const p = this._withEditableNameParts(person);
     p._displayName = this._computeDisplayName(p);
     p._displayYear = p.bYear || '';
-    p._treeHidden = this._isTreeIdHidden(p.id);
+    p._treeHidden = relationParentKey ? this._isTreeRelationHidden(relationParentKey, p.id) : this._isTreeIdHidden(p.id);
     p._otherTree = this._isOutsideCurrentProgenitor(p);
     return p;
+  },
+
+
+  _relationInstanceKey(parentRenderKey, relationId) {
+    return `${parentRenderKey || ''}>${relationId || ''}`;
+  },
+
+  _isTreeRelationHidden(parentRenderKey, relationId) {
+    if (!parentRenderKey || !relationId) return false;
+    const dbHidden = this.data.db && Array.isArray(this.data.db.hiddenRelationKeys) ? this.data.db.hiddenRelationKeys : [];
+    return dbHidden.includes(this._relationInstanceKey(parentRenderKey, relationId));
   },
 
   _isTreeIdHidden(id) {
@@ -1522,17 +1515,18 @@ Page({
     const people = (this.data.db && this.data.db.people) || {};
     const p = id && people[id];
     if (!p) return {};
+    const relationParentKey = this.data.editingRenderKey || id;
     const spouseObjects = (p.spouses || []).map(sid => people[sid] ? { ...people[sid], id: people[sid].id || sid } : null).filter(Boolean);
     return {
-      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
-      _displayChildren: this._buildProfileChildren(id, p)
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s, relationParentKey)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p, relationParentKey)
     };
   },
 
   _canToggleProfileRelationVisibility(id) {
     if (!id) return false;
     return (this.data.nodes || []).some(node => (
-      node && node.id === id && !node.isSpouse && !node.isDuplicatePlaceholder
+      node && node.id === id && !node.isSpouse
     ));
   },
 
@@ -1541,16 +1535,19 @@ Page({
     const id = detail.id;
     if (!id || !this.data.canToggleRelationVisibility) return;
     const db = JSON.parse(JSON.stringify(this.data.db || { activeRootId: null, people: {} }));
-    const hidden = Array.isArray(db.hiddenTreeIds) ? [...db.hiddenTreeIds] : [...(this.data.hiddenTreeIds || [])];
-    const index = hidden.indexOf(id);
+    const parentKey = this.data.editingRenderKey || this.data.editingId || '';
+    const relationKey = this._relationInstanceKey(parentKey, id);
+    const hidden = Array.isArray(db.hiddenRelationKeys) ? [...db.hiddenRelationKeys] : [];
+    const index = hidden.indexOf(relationKey);
     if (index >= 0) hidden.splice(index, 1);
-    else hidden.push(id);
-    db.hiddenTreeIds = hidden.filter(hiddenId => db.people && db.people[hiddenId]);
+    else hidden.push(relationKey);
+    db.hiddenRelationKeys = hidden;
     this._layoutCache = { standard: null, timeline: null };
     this._saveData(db);
     this.setData({
       db,
-      hiddenTreeIds: db.hiddenTreeIds
+      hiddenTreeIds: db.hiddenTreeIds || [],
+      hiddenRelationKeys: db.hiddenRelationKeys || []
     }, () => {
       this.setData(this._profileRelationDisplayPatch(this.data.editingId), () => this.refreshTree());
     });
@@ -1608,7 +1605,7 @@ Page({
     return rows;
   },
 
-  _buildProfileChildren(personId, person) {
+  _buildProfileChildren(personId, person, relationParentKey = '') {
     const db = this.data.db || {};
     const people = db.people || {};
     const p = person || people[personId];
@@ -1631,7 +1628,7 @@ Page({
 
     return childIds
       .map(childId => {
-        const child = this._decorateProfilePerson({ ...people[childId], id: people[childId].id || childId });
+        const child = this._decorateProfilePerson({ ...people[childId], id: people[childId].id || childId }, relationParentKey);
         return child && p.gender === 'female'
           ? { ...child, _disableReorder: true }
           : child;
@@ -1639,58 +1636,10 @@ Page({
       .filter(Boolean);
   },
 
-  _getDuplicateInstances(id) {
-    if (!id) return [];
-    return (this.data.nodes || []).filter(node => node && node.id === id && node.isDuplicateInstance);
-  },
-
-  _getDuplicateJumpTarget(id, originRenderKey = '') {
-    const instances = this._getDuplicateInstances(id);
-    if (instances.length <= 1) return null;
-    const originIndex = instances.findIndex(node => node.renderKey === originRenderKey);
-    if (originIndex >= 0) return instances[(originIndex + 1) % instances.length];
-    return instances[0];
-  },
-
-  _flashDuplicateInstances(id, originRenderKey = '') {
-    if (!id) return;
-    if (this._duplicateFlashTimer) {
-      clearTimeout(this._duplicateFlashTimer);
-      this._duplicateFlashTimer = null;
-    }
-    const applyFlash = () => {
-      this.setData({
-        duplicateFlashId: id,
-        duplicateFlashOriginRenderKey: originRenderKey || ''
-      });
-      this._duplicateFlashTimer = setTimeout(() => {
-        this._duplicateFlashTimer = null;
-        this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' });
-      }, 900);
-    };
-    if (this.data.duplicateFlashId) {
-      this.setData({ duplicateFlashId: '', duplicateFlashOriginRenderKey: '' }, applyFlash);
-    } else {
-      applyFlash();
-    }
-  },
-
-  _handleDuplicateInstanceTap(id, originRenderKey = '') {
-    const target = this._getDuplicateJumpTarget(id, originRenderKey);
-    if (!target) return false;
-    this._flashDuplicateInstances(id, originRenderKey);
-    this._scrollToTreeNode(id, { renderKey: target.renderKey, vertical: true, screenTopRpx: 120 });
-    return true;
-  },
-
   onNodeTap(e) {
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = e.id || dataset.id;
-    const renderKey = dataset.renderKey || '';
-    const isDuplicateTap = Number(dataset.duplicate || 0) === 1;
-    const hasRenderedTapOrigin = !!renderKey || isDuplicateTap;
-    const tappedNode = (this.data.nodes || []).find(node => (node.renderKey && node.renderKey === renderKey) || (node.id === id && !!node.isDuplicatePlaceholder === isDuplicateTap));
-    if ((hasRenderedTapOrigin && this._handleDuplicateInstanceTap(id, renderKey)) || isDuplicateTap || (tappedNode && tappedNode.isDuplicatePlaceholder)) return;
+    const renderKey = dataset.renderKey || id;
     const p = this.data.db.people[id];
     if (!p) return;
 
@@ -1725,6 +1674,7 @@ Page({
 
     this.setData({
       editingId: id,
+      editingRenderKey: renderKey,
       draftPerson: {},
       _editingPerson: this._decorateProfilePerson({ ...p, id: p.id || id }),
       _pendingEdits: {},
@@ -1732,8 +1682,8 @@ Page({
       showDrawer: true,
       canAddChild: p.gender === 'male',
       canToggleRelationVisibility: this._canToggleProfileRelationVisibility(id),
-      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s)).filter(Boolean),
-      _displayChildren: this._buildProfileChildren(id, p),
+      _displaySpouses: spouseObjects.map(s => this._decorateProfilePerson(s, renderKey)).filter(Boolean),
+      _displayChildren: this._buildProfileChildren(id, p, renderKey),
       _displayFather: displayFather,
       _displayMother: motherNode ? this._decorateProfilePerson(motherNode) : null,
       _displayPaternalRows: this._buildPaternalRows(id),
@@ -1789,6 +1739,7 @@ Page({
       collapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...this._rootSwitchScrollPatch(),
       ...this._emptyProfileContext()
@@ -2882,6 +2833,7 @@ Page({
       workspaceDeleteOpenId: '',
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...this._emptyProfileContext()
     }, () => {
@@ -3349,6 +3301,7 @@ Page({
       collapsedNodes: nextCollapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -3358,6 +3311,7 @@ Page({
       spousePickerTargetId: '',
       spousePickerTargetName: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerMode: '',
       spousePickerMatchKey: '',
       spousePickerRelationType: 'spouse',
@@ -3376,6 +3330,7 @@ Page({
     this.setData({
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -3385,6 +3340,7 @@ Page({
       spousePickerTargetId: '',
       spousePickerTargetName: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerMode: '',
       spousePickerMatchKey: '',
       spousePickerRelationType: 'spouse',
@@ -3403,7 +3359,16 @@ Page({
     const dataset = (e && e.currentTarget && e.currentTarget.dataset) || {};
     const id = dataset.id;
     const renderKey = dataset.renderKey || '';
-    if (this._handleDuplicateInstanceTap(id, renderKey) || Number(dataset.duplicate || 0) === 1) return;
+    const isDuplicateInstance = Number(dataset.duplicate || 0) === 1;
+    if (isDuplicateInstance) {
+      const current = this.data.duplicateExpandedKeys || [];
+      const key = dataset.instanceKey || renderKey || id;
+      const next = current.includes(key)
+        ? current.filter(x => x !== key)
+        : [...current, key];
+      this.setData({ duplicateExpandedKeys: next }, () => this.refreshTree());
+      return;
+    }
     const current = this.data.collapsedNodes;
     const next = current.includes(id)
       ? current.filter(x => x !== id)
@@ -3448,6 +3413,7 @@ Page({
       collapsedNodes: [],
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       ...((sampleDef && sampleDef.viewOptions) || {}),
       ...this._emptyProfileContext()
@@ -4197,12 +4163,14 @@ Page({
 
     this.setData({
       editingId: '',
+      editingRenderKey: '',
       draftPerson,
       _editingPerson: { ...draftPerson },
       showDrawer: true,
       showSpousePicker: false,
       spousePickerQuery: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerTargetId: mainPersonId,
       spousePickerTargetName: '',
       spousePickerMode: '',
@@ -4227,6 +4195,7 @@ Page({
       spousePickerTargetId: mainPersonId,
       spousePickerTargetName: targetName,
       spousePickerResults: this._buildSpousePickerResults(db, mainPersonId, ''),
+      spousePickerCurrentIndex: 0,
       spousePickerRelationType: 'spouse',
       spousePickerTitle: '可能已存在',
       spousePickerHint: '按姓名和性别匹配，其他父系优先；同一父系的可能人选列在后面。',
@@ -4239,6 +4208,7 @@ Page({
       showSpousePicker: false,
       spousePickerQuery: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerTargetId: '',
       spousePickerTargetName: '',
       spousePickerMode: '',
@@ -4256,7 +4226,8 @@ Page({
     const mainPersonId = this.data.spousePickerTargetId;
     this.setData({
       spousePickerQuery: query,
-      spousePickerResults: this._buildSpousePickerResults(db, mainPersonId, query)
+      spousePickerResults: this._buildSpousePickerResults(db, mainPersonId, query),
+      spousePickerCurrentIndex: 0
     });
   },
 
@@ -4280,6 +4251,7 @@ Page({
       showSpousePicker: false,
       spousePickerQuery: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerMode: '',
       spousePickerMatchKey: '',
       spousePickerRelationType: 'spouse',
@@ -4444,6 +4416,7 @@ Page({
       spousePickerTargetId: targetId,
       spousePickerTargetName: targetName,
       spousePickerResults: matches,
+      spousePickerCurrentIndex: 0,
       spousePickerMode: mode || '',
       spousePickerMatchKey: matchKey || '',
       spousePickerRelationType: isFather ? 'father' : 'child',
@@ -4464,6 +4437,7 @@ Page({
       spousePickerTargetId: mainPersonId,
       spousePickerTargetName: targetName,
       spousePickerResults: matches,
+      spousePickerCurrentIndex: 0,
       spousePickerMode: mode || '',
       spousePickerMatchKey: matchKey || '',
       spousePickerRelationType: 'spouse',
@@ -4614,7 +4588,8 @@ Page({
       _workspaceRank: sameWorkspace ? 0 : 1,
       _workspaceLabel: sameWorkspace ? '本家谱' : '其他家谱',
       _progenitorName: rootName,
-      _searchText: fields.map(v => String(v || '').toLowerCase()).join(' ')
+      _searchText: fields.map(v => String(v || '').toLowerCase()).join(' '),
+      _preview: this._buildCandidatePreview(id, db)
     };
   },
 
@@ -4625,6 +4600,68 @@ Page({
       birthFallback: '',
       deathFallback: ''
     });
+  },
+
+  _buildCandidatePaternalRows(id, db) {
+    const rows = [];
+    const father = this._getFather(id, db);
+    const grandfather = father ? this._getFather(father.id, db) : null;
+    const greatGrandfather = grandfather ? this._getFather(grandfather.id, db) : null;
+    if (greatGrandfather) rows.push({ label: '曾祖', ...this._decorateProfilePerson(greatGrandfather) });
+    if (grandfather) rows.push({ label: '祖', ...this._decorateProfilePerson(grandfather) });
+    if (father) rows.push({ label: '父', ...this._decorateProfilePerson(father) });
+    return rows;
+  },
+
+  _buildCandidateSpouses(id, db) {
+    const people = (db && db.people) || {};
+    const person = people[id] || {};
+    const spouseIds = new Set(person.spouses || []);
+    Object.entries(people).forEach(([otherId, other]) => {
+      if (other && (other.spouses || []).includes(id)) spouseIds.add(otherId);
+    });
+    return Array.from(spouseIds)
+      .map(spouseId => people[spouseId] ? this._decorateProfilePerson({ ...people[spouseId], id: spouseId }) : null)
+      .filter(Boolean);
+  },
+
+  _buildCandidateChildren(id, db) {
+    const people = (db && db.people) || {};
+    const person = people[id] || {};
+    const childIds = [];
+    const addChild = childId => {
+      if (!childId || !people[childId] || childIds.includes(childId)) return;
+      childIds.push(childId);
+    };
+    if (person.gender === 'male') (person.children || []).forEach(addChild);
+    if (person.gender === 'female') {
+      Object.entries(people).forEach(([childId, child]) => {
+        if (child && child.motherId === id) addChild(childId);
+      });
+    }
+    return childIds
+      .map(childId => this._decorateProfilePerson({ ...people[childId], id: childId }))
+      .filter(Boolean);
+  },
+
+  _buildCandidatePreview(id, db) {
+    return {
+      paternalRows: this._buildCandidatePaternalRows(id, db),
+      spouses: this._buildCandidateSpouses(id, db),
+      children: this._buildCandidateChildren(id, db)
+    };
+  },
+
+  onSpousePickerSwipe(e) {
+    const current = Number(e && e.detail && e.detail.current);
+    if (!Number.isFinite(current)) return;
+    this.setData({ spousePickerCurrentIndex: current });
+  },
+
+  onConfirmCurrentExistingSpouse() {
+    const current = (this.data.spousePickerResults || [])[this.data.spousePickerCurrentIndex || 0];
+    if (!current || !current.id) return;
+    this.onSelectExistingSpouse({ currentTarget: { dataset: { id: current.id } } });
   },
 
   onSelectExistingSpouse(e) {
@@ -4666,6 +4703,7 @@ Page({
       showSpousePicker: false,
       spousePickerQuery: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerTargetId: '',
       spousePickerTargetName: '',
       spousePickerMode: '',
@@ -4752,6 +4790,7 @@ Page({
       collapsedNodes,
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       draftPerson: {},
       _editingPerson: {},
@@ -4760,6 +4799,7 @@ Page({
       showSpousePicker: false,
       spousePickerQuery: '',
       spousePickerResults: [],
+      spousePickerCurrentIndex: 0,
       spousePickerTargetId: '',
       spousePickerTargetName: '',
       spousePickerMode: '',
@@ -6014,6 +6054,7 @@ Page({
       collapsedNodes: [],
       showDrawer: false,
       editingId: '',
+      editingRenderKey: '',
       creatingProfile: false,
       _editingPerson: {},
       _pendingEdits: {},
@@ -7576,18 +7617,6 @@ Page({
       return;
     }
 
-    if (type === 'duplicate-up' || type === 'duplicate-down') {
-      const symbol = type === 'duplicate-up' ? '☝' : '☟';
-      const slotSize = style.iconSize;
-      ctx.save();
-      ctx.fillStyle = iconColor;
-      ctx.font = `bold ${Math.round(slotSize * 1.35)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(symbol, x + slotSize / 2, y + slotSize / 2);
-      ctx.restore();
-      return;
-    }
 
     const slotSize = style.iconSize;
     const iconSize = type === 'leaf' ? style.leafIconSize : style.iconSize;
