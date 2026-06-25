@@ -652,6 +652,9 @@ text, view, button, input { font-weight: normal !important; }
 .line.affinal::before { background: #b5c2bf; }
 .line.stem::before { top: 0; bottom: 0; left: 0; width: 100%; }
 .line.branch::before { left: 0; right: 0; top: 0; height: 100%; }
+.line.dashed::before { background: transparent !important; box-sizing: border-box; }
+.line.dashed.stem::before { left: 0; width: 0; border-left: 2rpx dashed #7f8f8c; }
+.line.dashed.branch::before { top: 0; height: 0; border-top: 2rpx dashed #7f8f8c; }
 .line.marriage { width: 2rpx; opacity: 1; }
 .line.marriage::before { top: 0; bottom: 0; left: 0; width: 100%; background: #b5c2bf; }
 

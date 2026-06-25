@@ -1421,6 +1421,7 @@ function calculateLayout(db, config) {
   };
 
   const cousinMarriageAnchors = new Map();
+  const cousinBirthBranchAnchors = new Map();
   const primaryNodeCenters = new Map();
   const cousinMarriageMergeLineKeys = new Set();
   const descendantTreePersonIds = new Set();
@@ -1447,15 +1448,12 @@ function calculateLayout(db, config) {
     const spouse = db.people[spouseId];
     if (!person || !spouse) return false;
     const isRootSidePerson = (personId) => isRootDescendant(personId);
-    const hasSharedChild = (fatherId, motherId) => (
-      Array.isArray(db.people[fatherId] && db.people[fatherId].children)
-      && db.people[fatherId].children.some(cid => String((db.people[cid] && db.people[cid].motherId) || '') === String(motherId))
-    );
+    if (!isRootSidePerson(id) || !isRootSidePerson(spouseId)) return false;
     if (person.gender === 'male' && spouse.gender === 'female') {
-      return isRootSidePerson(id) && isRootSidePerson(spouseId) && hasSharedChild(id, spouseId);
+      return true;
     }
     if (person.gender === 'female' && spouse.gender === 'male') {
-      return isRootSidePerson(id) && isRootSidePerson(spouseId) && hasSharedChild(spouseId, id);
+      return true;
     }
     return false;
   };
@@ -1472,27 +1470,29 @@ function calculateLayout(db, config) {
   const addCousinMarriageMergeLines = (spouseId) => {
     const anchor = cousinMarriageAnchors.get(spouseId);
     const nodeCenter = primaryNodeCenters.get(spouseId);
+    const birthBranchAnchor = cousinBirthBranchAnchors.get(spouseId) || nodeCenter;
     const mergeKey = `${spouseId}>${anchor && anchor.husbandId || ''}`;
-    if (!anchor || !nodeCenter || cousinMarriageMergeLineKeys.has(mergeKey) || anchor.y === nodeCenter.y) return;
+    if (!anchor || !birthBranchAnchor || cousinMarriageMergeLineKeys.has(mergeKey) || anchor.y === birthBranchAnchor.y) return;
     cousinMarriageMergeLineKeys.add(mergeKey);
-    const mergeX = anchor.x || nodeCenter.x;
+    const mergeX = birthBranchAnchor.x || anchor.x;
     lines.push({
       type: 'stem',
       lineage: 'affinal',
       isMarriageMerge: true,
+      isDashed: true,
       x: mergeX,
-      y: Math.min(anchor.y, nodeCenter.y),
-      h: Math.abs(nodeCenter.y - anchor.y)
+      y: Math.min(anchor.y, birthBranchAnchor.y),
+      h: Math.abs(birthBranchAnchor.y - anchor.y)
     });
-    const ownBranchTargetX = getChildBranchTargetX(nodeCenter.nodeX);
-    if (mergeX !== ownBranchTargetX) {
+    if (mergeX !== anchor.x) {
       lines.push({
         type: 'branch',
         lineage: 'affinal',
         isMarriageMerge: true,
-        x: Math.min(mergeX, ownBranchTargetX),
-        y: nodeCenter.y,
-        w: Math.abs(ownBranchTargetX - mergeX)
+        isDashed: true,
+        x: Math.min(mergeX, anchor.x),
+        y: anchor.y,
+        w: Math.abs(anchor.x - mergeX)
       });
     }
   };
@@ -1821,6 +1821,10 @@ function calculateLayout(db, config) {
           const targetX = getChildBranchTargetX(childX);
           const childMidY = childY + rowH / 2;
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
+          if (!shouldRenderAsDuplicateBranch) {
+            cousinBirthBranchAnchors.set(cid, { x: childXBase, y: childMidY });
+            addCousinMarriageMergeLines(cid);
+          }
 
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
 
@@ -1880,6 +1884,10 @@ function calculateLayout(db, config) {
           const targetX = getChildBranchTargetX(childX);
           const childMidY = childY + rowH / 2;
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
+          if (!isDuplicateChild) {
+            cousinBirthBranchAnchors.set(cid, { x: childXBase, y: childMidY });
+            addCousinMarriageMergeLines(cid);
+          }
           const branchLine = { type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) };
           lines.push(branchLine);
 
