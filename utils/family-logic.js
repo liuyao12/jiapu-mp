@@ -1229,6 +1229,93 @@ function calculateLayout(db, config) {
     }
     return row;
   };
+  const compactTimelineBranchesBottomUp = () => {
+    if (!showTimeline || nodes.length < 2) return;
+    const nodeRows = nodes.map(node => Math.round((node.y || 0) / rowStep));
+    const nodeRanges = nodes.map(node => getTimelineNodeRange(node.x || 0, node.w || 0));
+    const sortedIndexes = nodes
+      .map((node, index) => ({ node, index, row: nodeRows[index] }))
+      .sort((a, b) => a.row - b.row || (a.node.x || 0) - (b.node.x || 0));
+    const orderToIndex = sortedIndexes.map(item => item.index);
+    const blocks = [];
+
+    sortedIndexes.forEach((item, order) => {
+      const root = item.node;
+      if (root.isSpouse) return;
+      const rootX = root.x || 0;
+      const indexes = [item.index];
+      for (let next = order + 1; next < sortedIndexes.length; next += 1) {
+        const candidate = sortedIndexes[next].node;
+        if (!candidate.isSpouse && (candidate.x || 0) <= rootX) break;
+        indexes.push(sortedIndexes[next].index);
+      }
+      const parent = [...sortedIndexes]
+        .slice(0, order)
+        .reverse()
+        .find(candidate => !candidate.node.isSpouse && (candidate.node.x || 0) < rootX);
+      blocks.push({
+        rootIndex: item.index,
+        indexes,
+        parentIndex: parent ? parent.index : -1,
+        maxX: Math.max(...indexes.map(index => nodes[index].x || 0)),
+        startRow: nodeRows[item.index]
+      });
+    });
+
+    const blockContains = new Set();
+    const canShift = (block, delta) => {
+      const parentRow = block.parentIndex >= 0 ? nodeRows[block.parentIndex] : -1;
+      for (const index of block.indexes) {
+        const targetRow = nodeRows[index] + delta;
+        if (targetRow <= parentRow || targetRow < 0) return false;
+      }
+      blockContains.clear();
+      block.indexes.forEach(index => blockContains.add(index));
+      for (const index of block.indexes) {
+        const targetRow = nodeRows[index] + delta;
+        const range = nodeRanges[index];
+        for (let other = 0; other < nodes.length; other += 1) {
+          if (blockContains.has(other)) continue;
+          if (nodeRows[other] !== targetRow) continue;
+          if (rangeOverlaps(range, nodeRanges[other])) return false;
+        }
+      }
+      return true;
+    };
+
+    blocks
+      .sort((a, b) => b.maxX - a.maxX || b.startRow - a.startRow || b.indexes.length - a.indexes.length)
+      .forEach(block => {
+        let delta = 0;
+        while (canShift(block, delta - 1)) delta -= 1;
+        if (delta === 0) return;
+        block.indexes.forEach(index => { nodeRows[index] += delta; });
+      });
+
+    const rowMap = new Map();
+    nodes.forEach((node, index) => {
+      const oldRow = Math.round((node.y || 0) / rowStep);
+      const newRow = nodeRows[index];
+      rowMap.set(oldRow, rowMap.has(oldRow) ? Math.min(rowMap.get(oldRow), newRow) : newRow);
+      node.y = newRow * rowStep;
+    });
+    const remapCenterY = (centerY) => {
+      const oldRow = Math.round((centerY - rowH / 2) / rowStep);
+      const newRow = rowMap.has(oldRow) ? rowMap.get(oldRow) : oldRow;
+      return newRow * rowStep + rowH / 2;
+    };
+    lines.forEach(line => {
+      const oldStart = line.y || 0;
+      const newStart = remapCenterY(oldStart);
+      if (line.type === 'stem') {
+        const newEnd = remapCenterY(oldStart + (line.h || 0));
+        line.y = Math.min(newStart, newEnd);
+        line.h = Math.abs(newEnd - newStart);
+      } else {
+        line.y = newStart;
+      }
+    });
+  };
   const getPersonalEventMarks = (id, nodeWidth, person) => {
     if (!showTimeline) return [];
     const events = personalEventsByPerson[id] || [];
@@ -1442,16 +1529,6 @@ function calculateLayout(db, config) {
   };
 
   const getRenderableKids = (id, lineage = 'patrilineal', parentRenderKey = id) => getRenderableKidEntries(id, lineage, parentRenderKey).map(entry => entry.id);
-  const hasRenderableBranchItems = (id, lineage = 'patrilineal', parentRenderKey = id) => {
-    const person = db.people[id];
-    if (!person) return false;
-    if (getRenderableKidEntries(id, lineage, parentRenderKey).length > 0) return true;
-    return !!(showSpouses && Array.isArray(person.spouses) && person.spouses.some(sid => (
-      !shouldSuppressCousinHusbandOnFemaleSide(id, sid)
-      && !isHiddenInTree(sid)
-      && !isRelationHidden(parentRenderKey, sid)
-    )));
-  };
   const findMaxRight = (id, depth, visitedFmr) => {
     if (visitedFmr.has(id)) return;
     visitedFmr.add(id);
@@ -1549,9 +1626,7 @@ function calculateLayout(db, config) {
         const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
         const childX = showTimeline ? getTimelineX(cid) : (depth + 1) * INDENT_W;
         const childWidth = showTimeline ? getTimelineNodeWidth(cid, db.people[cid]) : STANDARD_NODE_MIN_W;
-        const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
-        const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextRow;
-        const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
+        const childRow = findTimelineRowForRange(nextRow, childX, childWidth);
         const targetX = getChildBranchTargetX(childX);
         const childMidY = childRow * rowStep + rowH / 2;
         lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
@@ -1706,9 +1781,7 @@ function calculateLayout(db, config) {
           const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
           const isBirthMotherChild = isBirthMotherOf(id, cid);
           const shouldRenderAsDuplicateBranch = !isBirthMotherChild || visitedTraverse.has(cid);
-          const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
-          const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextAvailableRow;
-          const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
+          const childRow = findTimelineRowForRange(nextAvailableRow, childX, childWidth);
           const childY = childRow * rowStep;
           const targetX = getChildBranchTargetX(childX);
           const childMidY = childY + rowH / 2;
@@ -1767,9 +1840,7 @@ function calculateLayout(db, config) {
           const childX = showTimeline ? getTimelineX(cid) : (depth + 1) * INDENT_W;
           const childWidth = showTimeline ? getTimelineNodeWidth(cid, db.people[cid]) : STANDARD_NODE_MIN_W;
           const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
-          const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
-          const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextAvailableRow;
-          const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
+          const childRow = findTimelineRowForRange(nextAvailableRow, childX, childWidth);
           const childY = childRow * rowStep;
           const targetX = getChildBranchTargetX(childX);
           const childMidY = childY + rowH / 2;
@@ -1810,6 +1881,7 @@ function calculateLayout(db, config) {
   };
 
   traverse(rootId, 0, 0);
+  compactTimelineBranchesBottomUp();
   maxRow = compactRowsForNoGap(nodes, lines, rowH, rowStep);
 
   if (!showTimeline && nodes.length > 0) {
