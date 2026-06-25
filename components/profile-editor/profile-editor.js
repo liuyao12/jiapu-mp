@@ -1,6 +1,7 @@
 // components/profile-editor/profile-editor.js
 const { dateHintForYear } = require('../../utils/chinese-era');
 const { formatLifeRange } = require('../../utils/life-format');
+const { formatHometown } = require('../../utils/family-logic');
 const EventColors = require('../../utils/event-colors.js');
 
 Component({
@@ -127,10 +128,15 @@ Component({
     showMotherStatic: false,
     showMotherEmpty: true,
     motherPickerCardClass: 'rel-card female',
+    motherPickerTriggerClass: 'picker-box invitation',
     motherStaticCardClass: 'rel-card female',
     motherPickerName: '',
     motherPickerYear: '',
     motherPickerRank: '',
+    motherPickerIndex: 0,
+    showMotherPickerSheet: false,
+    motherPickerDraftIndex: 0,
+    motherPickerSheetValue: [0],
     motherStaticName: '',
     motherStaticYear: '',
     motherStaticRank: '',
@@ -341,6 +347,13 @@ Component({
       decorated._displayYear = decorated._displayYear || decorated.bYear || '';
       decorated.rankText = this._normalizeRankText(decorated.rank);
       return decorated;
+    },
+
+    _displayNameWithHometown(person) {
+      if (!person) return '';
+      const baseName = this._computeDisplayName(person.name, person.surname, person.firstname, false);
+      const hometown = formatHometown(person.hometown, { person });
+      return hometown ? `〔${hometown}〕${baseName}` : baseName;
     },
 
     _decoratePersonalEvents(events, options = {}) {
@@ -1072,6 +1085,7 @@ Component({
         const isDragging = item.id === draggingId;
         return {
           ...item,
+          _displayName: type === 'spouses' ? this._displayNameWithHometown(item) : item._displayName,
           cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (item._treeHidden ? ' tree-hidden' : '') + (isDragging ? ' dragging' : ''),
           cardStyle: isDragging ? `transform: translateY(${dragOffsetY}px) scale(1.02);` : '',
           yearText: item._displayYear || item.bYear || '',
@@ -1095,13 +1109,16 @@ Component({
 
     _buildMotherState(localMother) {
       const range = this.properties.motherRange || [];
-      const hasPicker = range.length > 1;
+      const hasPicker = range.length > 1 || !!localMother;
       const pending = this.properties.pendingMotherSelected === true;
       const currentGender = localMother ? (localMother.gender || 'female') : 'female';
-      const pickerName = localMother ? localMother._displayName : (this.properties.currentMotherName || '');
+      const pickerName = localMother ? this._displayNameWithHometown(localMother) : (this.properties.currentMotherName || '');
       const pickerYear = localMother ? (localMother._displayYear || localMother.bYear || '') : '';
       const pickerRank = localMother ? this._normalizeRankText(localMother.rank) : '';
+      const selectedMotherId = localMother ? localMother.id : '';
+      const selectedIndex = Math.max(0, range.findIndex(item => item && item.id === selectedMotherId));
       const cardClass = 'rel-card ' + currentGender + (pending ? ' pending-highlight' : '') + (localMother && localMother._otherTree ? ' external-tree' : '');
+      const triggerClass = hasPicker && !localMother && !pending ? 'picker-box invitation' : cardClass;
 
       return {
         showMotherPicker: hasPicker,
@@ -1110,11 +1127,15 @@ Component({
         showMotherStatic: !hasPicker && !!localMother,
         showMotherEmpty: !hasPicker && !localMother,
         motherPickerCardClass: cardClass,
+        motherPickerTriggerClass: triggerClass,
         motherStaticCardClass: localMother ? ('rel-card ' + (localMother.gender || 'female') + (localMother._otherTree ? ' external-tree' : '')) : 'rel-card female',
         motherPickerName: pickerName,
         motherPickerYear: pickerYear,
         motherPickerRank: pickerRank,
-        motherStaticName: localMother ? localMother._displayName : '',
+        motherPickerIndex: selectedIndex,
+        motherPickerDraftIndex: selectedIndex,
+        motherPickerSheetValue: [selectedIndex],
+        motherStaticName: localMother ? this._displayNameWithHometown(localMother) : '',
         motherStaticYear: localMother ? (localMother._displayYear || localMother.bYear || '') : '',
         motherStaticRank: localMother ? this._normalizeRankText(localMother.rank) : '',
         localMotherId: localMother ? localMother.id : ''
@@ -1539,6 +1560,36 @@ Component({
         return;
       }
       this._applyFieldChange(field, value);
+    },
+
+    openMotherPickerSheet() {
+      if (!this.data.showMotherPicker) return;
+      const index = Math.max(0, Number(this.data.motherPickerIndex) || 0);
+      this.setData({
+        showMotherPickerSheet: true,
+        motherPickerDraftIndex: index,
+        motherPickerSheetValue: [index]
+      });
+    },
+
+    closeMotherPickerSheet() {
+      this.setData({ showMotherPickerSheet: false });
+    },
+
+    onMotherPickerViewChange(e) {
+      const value = e && e.detail && Array.isArray(e.detail.value) ? e.detail.value : [0];
+      const index = Math.max(0, Number(value[0]) || 0);
+      this.setData({
+        motherPickerDraftIndex: index,
+        motherPickerSheetValue: [index]
+      });
+    },
+
+    confirmMotherPickerSheet() {
+      const index = Math.max(0, Number(this.data.motherPickerDraftIndex) || 0);
+      this._markChanged('motherId');
+      this.setData({ showMotherPickerSheet: false });
+      this.triggerEvent('motherchange', { value: index });
     },
 
     onMotherChange(e) {
