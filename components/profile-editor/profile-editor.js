@@ -1,6 +1,7 @@
 // components/profile-editor/profile-editor.js
 const { dateHintForYear } = require('../../utils/chinese-era');
 const { formatLifeRange } = require('../../utils/life-format');
+const { formatHometown } = require('../../utils/family-logic');
 const EventColors = require('../../utils/event-colors.js');
 
 Component({
@@ -347,6 +348,13 @@ Component({
       decorated._displayYear = decorated._displayYear || decorated.bYear || '';
       decorated.rankText = this._normalizeRankText(decorated.rank);
       return decorated;
+    },
+
+    _displayNameWithHometown(person) {
+      if (!person) return '';
+      const baseName = this._computeDisplayName(person.name, person.surname, person.firstname, false);
+      const hometown = formatHometown(person.hometown, { person });
+      return hometown ? `〔${hometown}〕${baseName}` : baseName;
     },
 
     _decoratePersonalEvents(events, options = {}) {
@@ -1078,6 +1086,7 @@ Component({
         const isDragging = item.id === draggingId;
         return {
           ...item,
+          _displayName: type === 'spouses' ? this._displayNameWithHometown(item) : item._displayName,
           cardClass: 'rel-card ' + gender + ' relation-' + type + (item._otherTree ? ' external-tree' : '') + (item._treeHidden ? ' tree-hidden' : '') + (isDragging ? ' dragging' : ''),
           cardStyle: isDragging ? `transform: translateY(${dragOffsetY}px) scale(1.02);` : '',
           yearText: item._displayYear || item.bYear || '',
@@ -1104,7 +1113,7 @@ Component({
       const hasPicker = range.length > 1 || !!localMother;
       const pending = this.properties.pendingMotherSelected === true;
       const currentGender = localMother ? (localMother.gender || 'female') : 'female';
-      const pickerName = localMother ? localMother._displayName : (this.properties.currentMotherName || '');
+      const pickerName = localMother ? this._displayNameWithHometown(localMother) : (this.properties.currentMotherName || '');
       const pickerYear = localMother ? (localMother._displayYear || localMother.bYear || '') : '';
       const pickerRank = localMother ? this._normalizeRankText(localMother.rank) : '';
       const selectedMotherId = localMother ? localMother.id : '';
@@ -1127,7 +1136,7 @@ Component({
         motherPickerIndex: selectedIndex,
         motherPickerDraftIndex: selectedIndex,
         motherPickerSheetValue: [selectedIndex],
-        motherStaticName: localMother ? localMother._displayName : '',
+        motherStaticName: localMother ? this._displayNameWithHometown(localMother) : '',
         motherStaticYear: localMother ? (localMother._displayYear || localMother.bYear || '') : '',
         motherStaticRank: localMother ? this._normalizeRankText(localMother.rank) : '',
         localMotherId: localMother ? localMother.id : ''

@@ -1284,6 +1284,35 @@ function calculateLayout(db, config) {
     return !!(child && motherId && String(child.motherId || '') === String(motherId));
   };
 
+  const cousinMarriageAnchors = new Map();
+  const isRootDescendant = (id) => {
+    if (!id || !rootId || !db.people[id]) return false;
+    let current = id;
+    const seen = new Set();
+    while (current && !seen.has(current)) {
+      if (current === rootId) return true;
+      seen.add(current);
+      current = getFatherId(current);
+    }
+    return false;
+  };
+  const isCousinMarriagePair = (id, spouseId) => {
+    const person = db.people[id];
+    const spouse = db.people[spouseId];
+    if (!person || !spouse || !isRootDescendant(id) || !isRootDescendant(spouseId)) return false;
+    return (person.gender === 'male' && spouse.gender === 'female') || (person.gender === 'female' && spouse.gender === 'male');
+  };
+  const shouldRenderCousinSpouseAsAuxiliary = (id, spouseId) => {
+    const person = db.people[id];
+    const spouse = db.people[spouseId];
+    return !!(person && spouse && person.gender === 'male' && spouse.gender === 'female' && isCousinMarriagePair(id, spouseId));
+  };
+  const shouldSuppressCousinHusbandOnFemaleSide = (id, spouseId) => {
+    const person = db.people[id];
+    const spouse = db.people[spouseId];
+    return !!(person && spouse && person.gender === 'female' && spouse.gender === 'male' && isCousinMarriagePair(id, spouseId));
+  };
+
   const getRenderableKidEntries = (id, lineage = 'patrilineal', parentRenderKey = id) => {
     const p = db.people[id];
     if (!p) return [];
@@ -1301,6 +1330,7 @@ function calculateLayout(db, config) {
       (p.children || []).forEach(cid => { if (!isHiddenInTree(cid) && !isRelationHidden(parentRenderKey, cid)) addKid(cid, childLineage, false); });
     } else if (p.gender === 'female' && showMaternal && p.spouses && p.spouses.length > 0) {
       p.spouses.forEach(sid => {
+        if (shouldSuppressCousinHusbandOnFemaleSide(id, sid)) return;
         if (isHiddenInTree(sid) || isRelationHidden(parentRenderKey, sid)) return;
         const spouse = db.people[sid];
         if (spouse && spouse.children && spouse.children.length > 0) {
@@ -1322,7 +1352,7 @@ function calculateLayout(db, config) {
 
     const seen = new Set();
     return p.spouses
-      .filter(sid => !isHiddenInTree(sid) && !isRelationHidden(parentRenderKey, sid))
+      .filter(sid => !shouldSuppressCousinHusbandOnFemaleSide(id, sid) && !isHiddenInTree(sid) && !isRelationHidden(parentRenderKey, sid))
       .map(sid => {
         const spouse = db.people[sid];
         const kidEntries = [];
@@ -1353,7 +1383,9 @@ function calculateLayout(db, config) {
     maxR = Math.max(maxR, startX + (displayName.length * 30) + 350);
     const isCollapsedForLayout = (collapsedNodes || []).includes(id);
     if (!isCollapsedForLayout) {
-      const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid) && !isRelationHidden(id, sid)) : [];
+      const sIds = (showSpouses && p.spouses)
+        ? p.spouses.filter(sid => !shouldSuppressCousinHusbandOnFemaleSide(id, sid) && !isHiddenInTree(sid) && !isRelationHidden(id, sid))
+        : [];
       if (sIds.length) {
         sIds.forEach(sid => {
           const s = db.people[sid]; if (s) {
@@ -1468,7 +1500,9 @@ function calculateLayout(db, config) {
     
     const kidEntries = getRenderableKidEntries(id, lineage, renderKey);
     const kids = kidEntries.map(entry => entry.id);
-    const sIds = (showSpouses && p.spouses) ? p.spouses.filter(sid => !isHiddenInTree(sid) && !isRelationHidden(renderKey, sid)) : [];
+    const sIds = (showSpouses && p.spouses)
+      ? p.spouses.filter(sid => !shouldSuppressCousinHusbandOnFemaleSide(id, sid) && !isHiddenInTree(sid) && !isRelationHidden(renderKey, sid))
+      : [];
     const maternalSpouseKidGroups = getMaternalSpouseKidGroups(id, lineage, renderKey);
     const groupMaternalKidsBySpouse = maternalSpouseKidGroups.length > 0;
     const hasExpandableItems = kids.length > 0 || sIds.length > 0;
@@ -1506,6 +1540,18 @@ function calculateLayout(db, config) {
       isOutsider: isOutsider
     });
 
+    const cousinMarriageAnchor = cousinMarriageAnchors.get(id);
+    if (cousinMarriageAnchor && cousinMarriageAnchor.y !== midY) {
+      lines.push({
+        type: 'stem',
+        lineage: 'affinal',
+        isMarriageMerge: true,
+        x: myX + TRUNK_OFFSET,
+        y: Math.min(cousinMarriageAnchor.y, midY),
+        h: Math.abs(midY - cousinMarriageAnchor.y)
+      });
+    }
+
     let nextAvailableRow = rowIdx + 1;
     const parentIconX = myX + TRUNK_OFFSET;
 
@@ -1513,6 +1559,7 @@ function calculateLayout(db, config) {
       sIds.forEach(sid => {
         const s = db.people[sid]; if (!s) return;
         const spouseWasVisited = visitedTraverse.has(sid);
+        const renderAsCousinAuxiliary = shouldRenderCousinSpouseAsAuxiliary(id, sid);
         const sX = showTimeline ? getTimelineX(sid) : myX;
         const sY = nextAvailableRow * rowStep;
         const spouseParts = getTreeDisplayParts(s, true, '', {
@@ -1531,14 +1578,15 @@ function calculateLayout(db, config) {
         } else {
           spouseWidth = getCompactNodeWidth(s, spouseParts.fullName);
         }
-        if (spouseWasVisited) {
+        if (spouseWasVisited && !renderAsCousinAuxiliary) {
           nextAvailableRow = addDuplicateBranchNode(sid, depth, nextAvailableRow, lineage, { parentRenderKey: id });
         } else {
-          // Mark spouse as visited so traverse() won't accidentally re-process it
-          // if the same ID also appears in someone's children array (data inconsistency guard)
-          visitedTraverse.add(sid);
+          // Mark non-tree spouses as visited so traverse() won't accidentally re-process them
+          // if the same ID also appears in someone's children array (data inconsistency guard).
+          // Cousin-marriage spouses remain renderable on their own birth branch.
+          if (!renderAsCousinAuxiliary) visitedTraverse.add(sid);
           nodes.push({
-            id: sid, renderKey: sid, name: spouseParts.name, rank: spouseParts.rank, gender: s.gender || 'female', isSpouse: true,
+            id: sid, renderKey: renderAsCousinAuxiliary ? `${renderKey || id}>spouse>${sid}` : sid, name: spouseParts.name, rank: spouseParts.rank, gender: s.gender || 'female', isSpouse: true,
             lineage,
             isLiving: isLivingPerson(s),
             nameText: spouseParts.nameText,
@@ -1551,6 +1599,14 @@ function calculateLayout(db, config) {
             personalEventMarks: getPersonalEventMarks(sid, spouseWidth, s),
             w: spouseWidth
           });
+          if (renderAsCousinAuxiliary) {
+            cousinMarriageAnchors.set(sid, {
+              spouseId: sid,
+              husbandId: id,
+              x: sX + TRUNK_OFFSET,
+              y: sY + rowH / 2
+            });
+          }
           nextAvailableRow++;
         }
 
