@@ -954,9 +954,11 @@ function assignTimelineEventLabelLanes(events, startYear) {
 function calculateLayout(db, config) {
   const { rootId, showTimeline, showSpouses, showMaternal, collapsedNodes } = config;
   const duplicateExpandedKeys = new Set(config.duplicateExpandedKeys || []);
-  const hiddenTreeIds = new Set(Array.isArray(config.hiddenTreeIds) ? config.hiddenTreeIds : []);
   const hiddenRelationKeys = new Set(Array.isArray(config.hiddenRelationKeys) ? config.hiddenRelationKeys : []);
-  const isHiddenInTree = id => hiddenTreeIds.has(id);
+  // Global hiddenTreeIds are legacy state from the pre-instance visibility model.
+  // Relation visibility is now keyed per rendered parent instance, so stale global ids
+  // must not suppress whole branches in one view while profile cards still look visible.
+  const isHiddenInTree = () => false;
   const getRelationKey = (parentKey, relationId) => `${parentKey || ''}>${relationId || ''}`;
   const isRelationHidden = (parentKey, relationId) => hiddenRelationKeys.has(getRelationKey(parentKey, relationId));
   const timelineEvents = Array.isArray(config.timelineEvents) ? config.timelineEvents : [];
@@ -1421,28 +1423,30 @@ function calculateLayout(db, config) {
   const cousinMarriageAnchors = new Map();
   const primaryNodeCenters = new Map();
   const cousinMarriageMergeLineKeys = new Set();
-  const isRootDescendant = (id) => {
-    if (!id || !rootId || !db.people[id]) return false;
-    let current = id;
-    const seen = new Set();
-    while (current && !seen.has(current)) {
-      if (current === rootId) return true;
-      seen.add(current);
-      current = getFatherId(current);
+  const descendantTreePersonIds = new Set();
+  const collectDescendantTreePersonIds = (id) => {
+    if (!id || !db.people[id] || descendantTreePersonIds.has(id)) return;
+    descendantTreePersonIds.add(id);
+    const person = db.people[id];
+    if (person.gender === 'male') {
+      (person.children || []).forEach(cid => collectDescendantTreePersonIds(cid));
+    } else if (person.gender === 'female' && showMaternal) {
+      (person.spouses || []).forEach(sid => {
+        const spouse = db.people[sid];
+        if (spouse && Array.isArray(spouse.children)) {
+          spouse.children.forEach(cid => collectDescendantTreePersonIds(cid));
+        }
+      });
     }
-    return false;
   };
+  collectDescendantTreePersonIds(rootId);
+  const isRootDescendant = (id) => descendantTreePersonIds.has(id);
   const isCousinMarriagePair = (id, spouseId) => {
     if (!showTimeline) return false;
     const person = db.people[id];
     const spouse = db.people[spouseId];
     if (!person || !spouse) return false;
-    const rootWorkspace = (db.people[rootId] && db.people[rootId].workspaceId) || extractProgenitorId(rootId) || rootId;
-    const isRootSidePerson = (personId) => {
-      const candidate = db.people[personId];
-      const workspace = (candidate && candidate.workspaceId) || extractProgenitorId(personId) || personId;
-      return isRootDescendant(personId) || (!!rootWorkspace && workspace === rootWorkspace);
-    };
+    const isRootSidePerson = (personId) => isRootDescendant(personId);
     const hasSharedChild = (fatherId, motherId) => (
       Array.isArray(db.people[fatherId] && db.people[fatherId].children)
       && db.people[fatherId].children.some(cid => String((db.people[cid] && db.people[cid].motherId) || '') === String(motherId))
