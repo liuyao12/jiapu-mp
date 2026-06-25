@@ -134,6 +134,9 @@ Component({
     motherPickerYear: '',
     motherPickerRank: '',
     motherPickerIndex: 0,
+    showMotherPickerSheet: false,
+    motherPickerDraftIndex: 0,
+    motherPickerSheetValue: [0],
     motherStaticName: '',
     motherStaticYear: '',
     motherStaticRank: '',
@@ -1098,7 +1101,7 @@ Component({
 
     _buildMotherState(localMother) {
       const range = this.properties.motherRange || [];
-      const hasPicker = range.length > 1;
+      const hasPicker = range.length > 1 || !!localMother;
       const pending = this.properties.pendingMotherSelected === true;
       const currentGender = localMother ? (localMother.gender || 'female') : 'female';
       const pickerName = localMother ? localMother._displayName : (this.properties.currentMotherName || '');
@@ -1122,6 +1125,8 @@ Component({
         motherPickerYear: pickerYear,
         motherPickerRank: pickerRank,
         motherPickerIndex: selectedIndex,
+        motherPickerDraftIndex: selectedIndex,
+        motherPickerSheetValue: [selectedIndex],
         motherStaticName: localMother ? localMother._displayName : '',
         motherStaticYear: localMother ? (localMother._displayYear || localMother.bYear || '') : '',
         motherStaticRank: localMother ? this._normalizeRankText(localMother.rank) : '',
@@ -1549,23 +1554,34 @@ Component({
       this._applyFieldChange(field, value);
     },
 
-    openMotherMenu() {
+    openMotherPickerSheet() {
       if (!this.data.showMotherPicker) return;
-      this.setData({ showMotherMenu: true });
+      const index = Math.max(0, Number(this.data.motherPickerIndex) || 0);
+      this.setData({
+        showMotherPickerSheet: true,
+        motherPickerDraftIndex: index,
+        motherPickerSheetValue: [index]
+      });
     },
 
-    closeMotherMenu() {
-      this.setData({ showMotherMenu: false });
+    closeMotherPickerSheet() {
+      this.setData({ showMotherPickerSheet: false });
     },
 
-    catchTap() {},
+    onMotherPickerViewChange(e) {
+      const value = e && e.detail && Array.isArray(e.detail.value) ? e.detail.value : [0];
+      const index = Math.max(0, Number(value[0]) || 0);
+      this.setData({
+        motherPickerDraftIndex: index,
+        motherPickerSheetValue: [index]
+      });
+    },
 
-    onMotherMenuSelect(e) {
-      const value = Number(e.currentTarget && e.currentTarget.dataset && e.currentTarget.dataset.index);
-      if (!Number.isFinite(value)) return;
+    confirmMotherPickerSheet() {
+      const index = Math.max(0, Number(this.data.motherPickerDraftIndex) || 0);
       this._markChanged('motherId');
-      this.setData({ showMotherMenu: false });
-      this.triggerEvent('motherchange', { value });
+      this.setData({ showMotherPickerSheet: false });
+      this.triggerEvent('motherchange', { value: index });
     },
 
     onMotherChange(e) {
