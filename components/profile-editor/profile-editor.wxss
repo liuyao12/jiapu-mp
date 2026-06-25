@@ -962,12 +962,12 @@ view, text, input {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  padding: 0 0 48rpx;
+  padding: 0;
   background: rgba(0, 0, 0, 0.28);
 }
 .mother-picker-panel {
-  width: 86%;
-  max-width: 640rpx;
+  width: 100%;
+  max-width: none;
   padding: 28rpx 28rpx 30rpx;
   border-radius: 28rpx;
   background: #fff;
@@ -1005,7 +1005,11 @@ view, text, input {
 .mother-picker-confirm {
   flex: 1;
   height: 72rpx;
-  line-height: 72rpx;
+  line-height: normal;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
   border-radius: 20rpx;
   font-size: 28rpx;
   font-family: "Songti SC", "STSong", "SimSun", serif;

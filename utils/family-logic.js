@@ -1379,7 +1379,7 @@ function calculateLayout(db, config) {
     const fatherId = getFatherId(id);
     const fatherPerson = fatherId ? db.people[fatherId] : null;
     const rootPerson = rootId ? db.people[rootId] : null;
-    const displayParts = getTreeDisplayParts(person, true, getVisibleFatherHometown(id), {
+    const displayParts = getTreeDisplayParts(person, true, getVisibleFatherHometown(id, options.parentId), {
       contextPeople: [fatherPerson, rootPerson]
     });
     const nodeWidth = showTimeline
@@ -1440,7 +1440,8 @@ function calculateLayout(db, config) {
         const childMidY = childRow * rowStep + rowH / 2;
         lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
         nextRow = addDuplicateBranchNode(cid, depth + 1, nextRow, childLineage, {
-          parentRenderKey: instanceKey
+          parentRenderKey: instanceKey,
+          parentId: id
         });
         if (nextRow > childRow) lastChildMidY = childMidY;
       });
@@ -1448,13 +1449,13 @@ function calculateLayout(db, config) {
     }
     return nextRow;
   };
-  const getVisibleFatherHometown = (id) => {
+  const getVisibleFatherHometown = (id, directParentId) => {
     const fatherId = getFatherId(id);
-    if (!fatherId || !visitedTraverse.has(fatherId) || !db.people[fatherId]) return '';
+    if (!fatherId || fatherId !== directParentId || !db.people[fatherId]) return '';
     return db.people[fatherId].hometown || '';
   };
 
-  const traverse = (id, depth, rowIdx, lineage = 'patrilineal', renderKey = id) => {
+  const traverse = (id, depth, rowIdx, lineage = 'patrilineal', renderKey = id, directParentId = '') => {
     if (visitedTraverse.has(id)) return rowIdx;
     visitedTraverse.add(id);
     const p = db.people[id]; 
@@ -1476,7 +1477,7 @@ function calculateLayout(db, config) {
     const fatherId = getFatherId(id);
     const fatherPerson = fatherId ? db.people[fatherId] : null;
     const rootPerson = rootId ? db.people[rootId] : null;
-    const displayParts = getTreeDisplayParts(p, true, getVisibleFatherHometown(id), {
+    const displayParts = getTreeDisplayParts(p, true, getVisibleFatherHometown(id, directParentId), {
       contextPeople: [fatherPerson, rootPerson]
     });
     
@@ -1580,9 +1581,10 @@ function calculateLayout(db, config) {
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
 
           const beforeTraverseRow = nextAvailableRow;
+          const directChildParentId = getFatherId(cid) === sid ? sid : id;
           nextAvailableRow = shouldRenderAsDuplicateBranch
-            ? addDuplicateBranchNode(cid, depth + 1, nextAvailableRow, childLineage, { parentRenderKey: id })
-            : traverse(cid, depth + 1, nextAvailableRow, childLineage, cid);
+            ? addDuplicateBranchNode(cid, depth + 1, nextAvailableRow, childLineage, { parentRenderKey: id, parentId: directChildParentId })
+            : traverse(cid, depth + 1, nextAvailableRow, childLineage, cid, directChildParentId);
           if (nextAvailableRow > beforeTraverseRow) {
             lastChildMidY = childMidY;
           }
@@ -1629,8 +1631,8 @@ function calculateLayout(db, config) {
           const beforeTraverseRow = nextAvailableRow;
           // traverse returns the total rows consumed by this child and all its descendants
           nextAvailableRow = isDuplicateChild
-            ? addDuplicateBranchNode(cid, depth + 1, nextAvailableRow, childLineage, { parentRenderKey: id })
-            : traverse(cid, depth + 1, nextAvailableRow, childLineage, cid);
+            ? addDuplicateBranchNode(cid, depth + 1, nextAvailableRow, childLineage, { parentRenderKey: id, parentId: id })
+            : traverse(cid, depth + 1, nextAvailableRow, childLineage, cid, id);
 
           // Only update lastChildMidY if this child or its descendants actually consumed rows
           // (i.e., nextAvailableRow increased after the traverse)
