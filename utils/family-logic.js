@@ -1442,6 +1442,16 @@ function calculateLayout(db, config) {
   };
 
   const getRenderableKids = (id, lineage = 'patrilineal', parentRenderKey = id) => getRenderableKidEntries(id, lineage, parentRenderKey).map(entry => entry.id);
+  const hasRenderableBranchItems = (id, lineage = 'patrilineal', parentRenderKey = id) => {
+    const person = db.people[id];
+    if (!person) return false;
+    if (getRenderableKidEntries(id, lineage, parentRenderKey).length > 0) return true;
+    return !!(showSpouses && Array.isArray(person.spouses) && person.spouses.some(sid => (
+      !shouldSuppressCousinHusbandOnFemaleSide(id, sid)
+      && !isHiddenInTree(sid)
+      && !isRelationHidden(parentRenderKey, sid)
+    )));
+  };
   const findMaxRight = (id, depth, visitedFmr) => {
     if (visitedFmr.has(id)) return;
     visitedFmr.add(id);
@@ -1539,7 +1549,9 @@ function calculateLayout(db, config) {
         const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
         const childX = showTimeline ? getTimelineX(cid) : (depth + 1) * INDENT_W;
         const childWidth = showTimeline ? getTimelineNodeWidth(cid, db.people[cid]) : STANDARD_NODE_MIN_W;
-        const childRow = findTimelineRowForRange(showTimeline ? rowIdx + 1 : nextRow, childX, childWidth);
+        const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
+        const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextRow;
+        const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
         const targetX = getChildBranchTargetX(childX);
         const childMidY = childRow * rowStep + rowH / 2;
         lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
@@ -1690,14 +1702,16 @@ function calculateLayout(db, config) {
         spouseKids.forEach(cid => {
           const childX = showTimeline ? getTimelineX(cid) : (depth + 1) * INDENT_W;
           const childWidth = showTimeline ? getTimelineNodeWidth(cid, db.people[cid]) : STANDARD_NODE_MIN_W;
-          const childRow = findTimelineRowForRange(showTimeline ? rowIdx + 1 : nextAvailableRow, childX, childWidth);
-          const childY = childRow * rowStep;
-          const targetX = getChildBranchTargetX(childX);
-          const childMidY = childY + rowH / 2;
           const childEntry = spouseKidEntries.find(entry => entry.id === cid);
           const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
           const isBirthMotherChild = isBirthMotherOf(id, cid);
           const shouldRenderAsDuplicateBranch = !isBirthMotherChild || visitedTraverse.has(cid);
+          const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
+          const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextAvailableRow;
+          const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
+          const childY = childRow * rowStep;
+          const targetX = getChildBranchTargetX(childX);
+          const childMidY = childY + rowH / 2;
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
 
           lines.push({ type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) });
@@ -1752,11 +1766,13 @@ function calculateLayout(db, config) {
           // IMPORTANT: Record child row BEFORE traverse to use for branch line
           const childX = showTimeline ? getTimelineX(cid) : (depth + 1) * INDENT_W;
           const childWidth = showTimeline ? getTimelineNodeWidth(cid, db.people[cid]) : STANDARD_NODE_MIN_W;
-          const childRow = findTimelineRowForRange(showTimeline ? rowIdx + 1 : nextAvailableRow, childX, childWidth);
+          const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
+          const childHasBranch = hasRenderableBranchItems(cid, childLineage, cid);
+          const childMinRow = showTimeline && !childHasBranch ? rowIdx + 1 : nextAvailableRow;
+          const childRow = findTimelineRowForRange(childMinRow, childX, childWidth);
           const childY = childRow * rowStep;
           const targetX = getChildBranchTargetX(childX);
           const childMidY = childY + rowH / 2;
-          const childLineage = (childEntry && childEntry.lineage) || connectorLineage;
           if (childLineage === 'patrilineal') patrilinealStemEndYs.push(childMidY);
           const branchLine = { type: 'branch', lineage: childLineage, x: childXBase, y: childMidY, w: Math.max(targetX - childXBase, 0) };
           lines.push(branchLine);
