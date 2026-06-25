@@ -125,6 +125,7 @@ Component({
     showMotherPicker: false,
     showMotherInvitation: false,
     showMotherPickerCard: false,
+    showMotherMenu: false,
     showMotherStatic: false,
     showMotherEmpty: true,
     motherPickerCardClass: 'rel-card female',
